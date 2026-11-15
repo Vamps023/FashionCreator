@@ -23,6 +23,9 @@
       "@fashion-studio/artwork-engine": ["../../packages/artwork-engine/src"],
       "@fashion-studio/garment-engine": ["../../packages/garment-engine/src"],
       "@fashion-studio/renderer-3d": ["../../packages/renderer-3d/src"],
+      "@fashion-studio/pattern-engine": ["../../packages/pattern-engine/src"],
+      "@fashion-studio/simulation-adapter": ["../../packages/simulation-adapter/src"],
+      "@fashion-studio/ui": ["../../packages/ui/src"],
       "@fashion-studio/export-engine": ["../../packages/export-engine/src"]
     }
   },

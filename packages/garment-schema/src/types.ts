@@ -3,7 +3,7 @@
  * Formal schema definition for garments, materials, artwork, avatars, and projects.
  */
 
-export type EditorMode = 'design' | 'fabric' | 'artwork' | 'fitting' | 'render';
+export type EditorMode = 'design' | 'fabric' | 'artwork' | 'pattern' | 'fitting' | 'render' | 'simulation';
 
 export type GarmentType = 'hoodie' | 'tshirt' | 'sweatshirt';
 

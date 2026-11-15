@@ -1,13 +1,8 @@
 import React, { useRef } from 'react';
-import {
-  useEditorStore,
-  useActiveGarment
-} from '@fashion-studio/editor-core';
+import { useEditorStore } from '@fashion-studio/editor-core';
 import { EditorMode } from '@fashion-studio/garment-schema';
-import {
-  exportProjectFile,
-  importProjectFile
-} from '@fashion-studio/export-engine';
+import { exportProjectFile, importProjectFile } from '@fashion-studio/export-engine';
+import { useTheme } from '@fashion-studio/ui';
 import {
   Undo2,
   Redo2,
@@ -19,15 +14,27 @@ import {
   Palette,
   Image as ImageIcon,
   User,
-  Camera
+  Camera,
+  Sun,
+  Moon,
+  Grid,
+  CheckCircle,
+  LayoutDashboard,
+  Box
 } from 'lucide-react';
 
 interface HeaderProps {
+  onOpenDashboard: () => void;
+  onOpenGLBValidator: () => void;
   onExportPNG: (transparent: boolean) => void;
   onExportGLB: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenDashboard,
+  onOpenGLBValidator,
+  onExportGLB
+}) => {
   const {
     project,
     activeMode,
@@ -41,13 +48,14 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
     loadProject
   } = useEditorStore();
 
-  const activeGarment = useActiveGarment();
+  const { theme, toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const modes: { id: EditorMode; label: string; icon: React.ReactNode }[] = [
     { id: 'design', label: 'Design', icon: <Scissors className="w-3.5 h-3.5" /> },
     { id: 'fabric', label: 'Fabric', icon: <Palette className="w-3.5 h-3.5" /> },
     { id: 'artwork', label: 'Artwork', icon: <ImageIcon className="w-3.5 h-3.5" /> },
+    { id: 'pattern', label: 'Pattern (2D)', icon: <Grid className="w-3.5 h-3.5" /> },
     { id: 'fitting', label: 'Fitting', icon: <User className="w-3.5 h-3.5" /> },
     { id: 'render', label: 'Render', icon: <Camera className="w-3.5 h-3.5" /> }
   ];
@@ -65,35 +73,39 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
   };
 
   return (
-    <header className="h-12 bg-studio-900 border-b border-studio-800 flex items-center justify-between px-3 z-30 select-none">
+    <header className="h-12 bg-[var(--bg-panel)] border-b border-[var(--border)] flex items-center justify-between px-3 z-30 select-none text-[var(--text-primary)]">
       {/* Brand & Project Name */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-bold tracking-wider text-sm text-white">
-          <div className="w-6 h-6 rounded bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-sm">
+        <button
+          onClick={onOpenDashboard}
+          className="flex items-center gap-2 font-bold tracking-wider text-xs hover:opacity-80 transition-opacity"
+          title="Open Project Dashboard"
+        >
+          <div className="w-6 h-6 rounded bg-[var(--accent)] flex items-center justify-center text-white shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
-          <span className="font-semibold text-studio-200">Fashion Studio</span>
-        </div>
+          <span className="font-semibold text-sm">Fashion Studio</span>
+        </button>
 
-        <span className="text-studio-600 text-xs">/</span>
+        <span className="text-[var(--text-secondary)] text-xs">/</span>
 
         <input
           type="text"
           value={project.name}
           onChange={(e) => updateProjectName(e.target.value)}
-          className="bg-transparent hover:bg-studio-850 focus:bg-studio-850 px-2 py-1 rounded text-xs text-studio-300 font-medium border border-transparent hover:border-studio-750 focus:border-blue-500 outline-none w-44 transition-all"
+          className="bg-transparent hover:bg-[var(--bg-elevated)] focus:bg-[var(--bg-elevated)] px-2 py-1 rounded text-xs text-[var(--text-primary)] font-medium border border-transparent hover:border-[var(--border)] focus:border-[var(--accent)] outline-none w-44 transition-all"
           title="Click to rename project"
         />
 
         {/* Undo / Redo */}
-        <div className="flex items-center gap-1 border-l border-studio-800 pl-2">
+        <div className="flex items-center gap-1 border-l border-[var(--border)] pl-2">
           <button
             onClick={undo}
             disabled={!canUndo}
             className={`p-1.5 rounded transition-colors ${
               canUndo
-                ? 'text-studio-300 hover:bg-studio-800 hover:text-white'
-                : 'text-studio-600 cursor-not-allowed opacity-40'
+                ? 'text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
+                : 'text-[var(--text-secondary)] cursor-not-allowed opacity-30'
             }`}
             title="Undo (Ctrl+Z)"
           >
@@ -104,8 +116,8 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
             disabled={!canRedo}
             className={`p-1.5 rounded transition-colors ${
               canRedo
-                ? 'text-studio-300 hover:bg-studio-800 hover:text-white'
-                : 'text-studio-600 cursor-not-allowed opacity-40'
+                ? 'text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
+                : 'text-[var(--text-secondary)] cursor-not-allowed opacity-30'
             }`}
             title="Redo (Ctrl+Y)"
           >
@@ -113,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
           </button>
           <button
             onClick={resetProject}
-            className="p-1.5 rounded text-studio-400 hover:bg-studio-800 hover:text-amber-400 transition-colors"
+            className="p-1.5 rounded text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-amber-500 transition-colors"
             title="Reset to default template"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -121,8 +133,8 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
         </div>
       </div>
 
-      {/* Center: Mode Switcher */}
-      <nav className="flex items-center gap-1 bg-studio-950 p-1 rounded-lg border border-studio-850">
+      {/* Center: Mode Navigation Tabs */}
+      <nav className="flex items-center gap-1 bg-[var(--bg-elevated)] p-1 rounded-lg border border-[var(--border)]">
         {modes.map((m) => {
           const isActive = activeMode === m.id;
           return (
@@ -131,8 +143,8 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
               onClick={() => setActiveMode(m.id)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-studio-400 hover:text-studio-200 hover:bg-studio-850'
+                  ? 'bg-[var(--accent)] text-white shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel)]'
               }`}
             >
               {m.icon}
@@ -142,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
         })}
       </nav>
 
-      {/* Right: Project I/O and Export Actions */}
+      {/* Right: Actions, Theme Toggle, Export */}
       <div className="flex items-center gap-2">
         <input
           type="file"
@@ -152,9 +164,36 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
           className="hidden"
         />
 
+        {/* Dashboard button */}
+        <button
+          onClick={onOpenDashboard}
+          className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          title="Open Dashboard"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+        </button>
+
+        {/* GLB Validator Tool */}
+        <button
+          onClick={onOpenGLBValidator}
+          className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          title="Validate Exported GLB File"
+        >
+          <Box className="w-4 h-4" />
+        </button>
+
+        {/* Theme Toggle (Dark / Light) */}
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+        </button>
+
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-1 px-2.5 py-1 rounded bg-studio-850 hover:bg-studio-800 text-studio-300 text-xs font-medium border border-studio-750 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--bg-elevated)] hover:bg-[var(--bg-panel)] text-[var(--text-primary)] text-xs font-medium border border-[var(--border)] transition-colors"
           title="Open .fstudio project"
         >
           <FolderOpen className="w-3.5 h-3.5" />
@@ -163,17 +202,16 @@ export const Header: React.FC<HeaderProps> = ({ onExportPNG, onExportGLB }) => {
 
         <button
           onClick={() => exportProjectFile(project)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded bg-studio-850 hover:bg-studio-800 text-studio-300 text-xs font-medium border border-studio-750 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--bg-elevated)] hover:bg-[var(--bg-panel)] text-[var(--text-primary)] text-xs font-medium border border-[var(--border)] transition-colors"
           title="Save project locally as .fstudio"
         >
           <Download className="w-3.5 h-3.5" />
           Save
         </button>
 
-        {/* Quick GLB Export */}
         <button
           onClick={onExportGLB}
-          className="flex items-center gap-1.5 px-3 py-1 rounded bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-medium shadow transition-all"
+          className="flex items-center gap-1.5 px-3 py-1 rounded bg-[var(--accent)] hover:opacity-90 text-white text-xs font-medium shadow transition-opacity"
           title="Export 3D Model with PBR materials and graphics"
         >
           Export GLB

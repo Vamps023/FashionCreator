@@ -43,15 +43,15 @@ export const LeftSidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 bg-studio-900 border-r border-studio-800 flex flex-col h-full select-none z-20">
+    <aside className="w-full bg-[var(--bg-panel)] border-r border-[var(--border)] flex flex-col h-full select-none text-[var(--text-primary)]">
       {/* 1. Garment Library Section */}
-      <div className="p-3 border-b border-studio-800">
+      <div className="p-3 border-b border-[var(--border)]">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-studio-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Shirt className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+            <Shirt className="w-3.5 h-3.5 text-[var(--accent)]" />
             Garment Library
           </span>
-          <span className="text-[10px] text-studio-500 font-mono">v1.0</span>
+          <span className="text-[10px] text-[var(--text-secondary)] font-mono">v1.0</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -59,26 +59,26 @@ export const LeftSidebar: React.FC = () => {
             onClick={() => switchGarmentTemplate('hoodie')}
             className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
               activeGarment.type === 'hoodie'
-                ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-medium'
-                : 'bg-studio-850 border-studio-750 text-studio-400 hover:text-studio-200 hover:bg-studio-800'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <span className="text-xl mb-1">🧥</span>
             <span className="text-xs">Hoodie</span>
-            <span className="text-[9px] text-studio-500">Oversized</span>
+            <span className="text-[9px] opacity-70">Oversized</span>
           </button>
 
           <button
             onClick={() => switchGarmentTemplate('tshirt')}
             className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
               activeGarment.type === 'tshirt'
-                ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-medium'
-                : 'bg-studio-850 border-studio-750 text-studio-400 hover:text-studio-200 hover:bg-studio-800'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <span className="text-xl mb-1">👕</span>
             <span className="text-xs">T-Shirt</span>
-            <span className="text-[9px] text-studio-500">Boxy Fit</span>
+            <span className="text-[9px] opacity-70">Boxy Fit</span>
           </button>
         </div>
       </div>
@@ -86,11 +86,11 @@ export const LeftSidebar: React.FC = () => {
       {/* 2. Garment Part Hierarchy */}
       <div className="flex-1 overflow-y-auto p-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-studio-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-[var(--accent)]" />
             Components & Parts
           </span>
-          <span className="text-[10px] text-studio-500">Select to inspect</span>
+          <span className="text-[10px] text-[var(--text-secondary)]">Click to inspect</span>
         </div>
 
         <div className="space-y-1">
@@ -111,37 +111,37 @@ export const LeftSidebar: React.FC = () => {
                 onClick={() => selectPart(part.id)}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
                   isSelected
-                    ? 'bg-blue-600 text-white font-medium shadow-sm'
-                    : 'text-studio-300 hover:bg-studio-850 hover:text-white'
+                    ? 'bg-[var(--accent)] text-white font-medium shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{part.icon}</span>
                   <span>{part.label}</span>
                 </div>
-                {isSelected && <ChevronRight className="w-3 h-3 opacity-70" />}
+                {isSelected && <ChevronRight className="w-3 h-3 opacity-80" />}
               </button>
             );
           })}
         </div>
 
         {/* 3. Artwork Layer Tree */}
-        <div className="mt-5 pt-3 border-t border-studio-800">
+        <div className="mt-5 pt-3 border-t border-[var(--border)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-studio-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Box className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+              <Box className="w-3.5 h-3.5 text-[var(--positive)]" />
               Artwork Layers ({activeGarment.artworkLayers.length})
             </span>
             <button
               onClick={() => setActiveMode('artwork')}
-              className="text-[10px] text-blue-400 hover:underline"
+              className="text-[10px] text-[var(--accent)] hover:underline"
             >
               + Add
             </button>
           </div>
 
           {activeGarment.artworkLayers.length === 0 ? (
-            <div className="text-center py-4 text-studio-500 text-xs italic">
+            <div className="text-center py-4 text-[var(--text-secondary)] text-xs italic">
               No artwork layers placed.
             </div>
           ) : (
@@ -157,15 +157,15 @@ export const LeftSidebar: React.FC = () => {
                     }}
                     className={`flex items-center justify-between px-2 py-1.5 rounded text-xs cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-studio-750 text-white border border-studio-600'
-                        : 'text-studio-300 hover:bg-studio-850'
+                        ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--accent)]'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">
                       {layer.type === 'text' ? (
-                        <Type className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                        <Type className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" />
                       ) : (
-                        <ImageIcon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <ImageIcon className="w-3.5 h-3.5 text-[var(--positive)] flex-shrink-0" />
                       )}
                       <span className="truncate">{layer.name}</span>
                     </div>
@@ -173,18 +173,18 @@ export const LeftSidebar: React.FC = () => {
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => updateArtworkLayer(layer.id, { visible: !layer.visible })}
-                        className="p-1 text-studio-400 hover:text-white"
+                        className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                         title={layer.visible ? 'Hide layer' : 'Show layer'}
                       >
                         {layer.visible ? (
-                          <Eye className="w-3 h-3 text-studio-300" />
+                          <Eye className="w-3 h-3 text-[var(--text-primary)]" />
                         ) : (
-                          <EyeOff className="w-3 h-3 text-studio-600" />
+                          <EyeOff className="w-3 h-3 text-[var(--text-secondary)]" />
                         )}
                       </button>
                       <button
                         onClick={() => removeArtworkLayer(layer.id)}
-                        className="p-1 text-studio-500 hover:text-rose-400"
+                        className="p-1 text-[var(--text-secondary)] hover:text-rose-500"
                         title="Delete layer"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -199,8 +199,8 @@ export const LeftSidebar: React.FC = () => {
       </div>
 
       {/* Footer Info Box */}
-      <div className="p-3 border-t border-studio-800 text-[10px] text-studio-500 bg-studio-950/60 flex items-center gap-1.5">
-        <ShieldAlert className="w-3.5 h-3.5 text-studio-400" />
+      <div className="p-3 border-t border-[var(--border)] text-[10px] text-[var(--text-secondary)] bg-[var(--bg-elevated)] flex items-center gap-1.5">
+        <ShieldAlert className="w-3.5 h-3.5 text-[var(--accent)]" />
         <span>Non-destructive parametric stack</span>
       </div>
     </aside>

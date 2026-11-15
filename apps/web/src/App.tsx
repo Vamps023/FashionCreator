@@ -2,21 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore, useActiveGarment } from '@fashion-studio/editor-core';
 import { exportPNGImage, exportGLBFile, exportProjectFile } from '@fashion-studio/export-engine';
 import { PerformanceStats } from '@fashion-studio/renderer-3d';
+import { ThemeProvider, ResizablePanel, ErrorBoundary } from '@fashion-studio/ui';
 import { Header } from './components/Header';
 import { LeftSidebar } from './components/LeftSidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { Viewport3D, Viewport3DHandle } from './components/Viewport3D';
 import { ArtworkCanvasEditor } from './components/ArtworkCanvasEditor';
+import { PatternEditor } from './components/PatternEditor';
 import { BottomBar } from './components/BottomBar';
+import { DashboardModal } from './components/DashboardModal';
+import { GLBValidatorModal } from './components/GLBValidatorModal';
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
   const [stats, setStats] = useState<PerformanceStats>({
     fps: 60,
     drawCalls: 12,
     triangles: 14200
   });
 
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isGLBValidatorOpen, setIsGLBValidatorOpen] = useState(false);
+
   const viewportRef = useRef<Viewport3DHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const {
     project,
     activeMode,
@@ -29,6 +38,18 @@ export const App: React.FC = () => {
   } = useEditorStore();
 
   const activeGarment = useActiveGarment();
+
+  // Autosave to localStorage every 15 seconds if project is dirty
+  useEffect(() => {
+    const timer = setInterval(() => {
+      try {
+        localStorage.setItem('fashion_studio_autosave', JSON.stringify(project));
+      } catch (e) {
+        // storage quota exceeded ignore
+      }
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [project]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -86,26 +107,68 @@ export const App: React.FC = () => {
     }
   };
 
-  const show2DLayout = viewMode2D3D === 'split' || activeMode === 'artwork';
+  const show2DArtwork = activeMode === 'artwork' || (viewMode2D3D === 'split' && activeMode !== 'pattern');
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-studio-950 text-studio-100 overflow-hidden font-sans">
+    <div className="h-screen w-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden font-sans">
       {/* Top Application Header */}
-      <Header onExportPNG={handleExportPNG} onExportGLB={handleExportGLB} />
+      <Header
+        onOpenDashboard={() => setIsDashboardOpen(true)}
+        onOpenGLBValidator={() => setIsGLBValidatorOpen(true)}
+        onExportPNG={handleExportPNG}
+        onExportGLB={handleExportGLB}
+      />
 
-      {/* Main Studio Workspace (Left Panel | Center 3D & 2D | Right Inspector) */}
+      {/* Main Studio Workspace */}
       <main className="flex-1 flex overflow-hidden relative">
-        <LeftSidebar />
+        {/* Left Resizable Panel */}
+        <ResizablePanel side="left" defaultWidth={260} minWidth={200} maxWidth={380}>
+          <LeftSidebar />
+        </ResizablePanel>
 
-        {show2DLayout && <ArtworkCanvasEditor />}
+        {/* Center Viewport or Pattern Editor */}
+        <div className="flex-1 flex h-full overflow-hidden">
+          {activeMode === 'pattern' ? (
+            <PatternEditor />
+          ) : (
+            <>
+              {show2DArtwork && <ArtworkCanvasEditor />}
+              <ErrorBoundary fallbackTitle="3D Viewport Encountered an Issue">
+                <Viewport3D ref={viewportRef} onPerformanceUpdate={setStats} />
+              </ErrorBoundary>
+            </>
+          )}
+        </div>
 
-        <Viewport3D ref={viewportRef} onPerformanceUpdate={setStats} />
-
-        <RightSidebar onExportPNG={handleExportPNG} onExportGLB={handleExportGLB} />
+        {/* Right Resizable Inspector */}
+        <ResizablePanel side="right" defaultWidth={320} minWidth={260} maxWidth={460}>
+          <RightSidebar onExportPNG={handleExportPNG} onExportGLB={handleExportGLB} />
+        </ResizablePanel>
       </main>
 
       {/* Bottom Status Bar */}
       <BottomBar stats={stats} />
+
+      {/* Dashboard Modal */}
+      <DashboardModal
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        onOpenFile={() => fileInputRef.current?.click()}
+      />
+
+      {/* GLB Validator Modal */}
+      <GLBValidatorModal
+        isOpen={isGLBValidatorOpen}
+        onClose={() => setIsGLBValidatorOpen(false)}
+      />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };

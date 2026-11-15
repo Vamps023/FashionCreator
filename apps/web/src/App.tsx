@@ -9,6 +9,7 @@ import { RightSidebar } from './components/RightSidebar';
 import { Viewport3D, Viewport3DHandle } from './components/Viewport3D';
 import { ArtworkCanvasEditor } from './components/ArtworkCanvasEditor';
 import { PatternEditor } from './components/PatternEditor';
+import { PatternCADCanvas } from './components/PatternCADCanvas';
 import { BottomBar } from './components/BottomBar';
 import { DashboardModal } from './components/DashboardModal';
 import { GLBValidatorModal } from './components/GLBValidatorModal';
@@ -22,6 +23,7 @@ export const AppContent: React.FC = () => {
 
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isGLBValidatorOpen, setIsGLBValidatorOpen] = useState(false);
+  const [isSimRunning, setIsSimRunning] = useState(false);
 
   const viewportRef = useRef<Viewport3DHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,15 @@ export const AppContent: React.FC = () => {
 
   const activeGarment = useActiveGarment();
 
+  const handleToggleSimulation = () => {
+    viewportRef.current?.toggleSimulation();
+  };
+
+  const handleResetSimulation = () => {
+    viewportRef.current?.resetSimulation();
+    setIsSimRunning(false);
+  };
+
   // Autosave to localStorage every 15 seconds if project is dirty
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,6 +65,15 @@ export const AppContent: React.FC = () => {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if (!isInput && e.code === 'Space') {
+        e.preventDefault();
+        handleToggleSimulation();
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -126,23 +146,44 @@ export const AppContent: React.FC = () => {
           <LeftSidebar />
         </ResizablePanel>
 
-        {/* Center Viewport or Pattern Editor */}
+        {/* Center Viewport and 2D Editors (Split / 2D / 3D Layout) */}
         <div className="flex-1 flex h-full overflow-hidden">
-          {activeMode === 'pattern' ? (
-            <PatternEditor />
-          ) : (
-            <>
-              {show2DArtwork && <ArtworkCanvasEditor />}
+          {viewMode2D3D !== '3d-only' && (
+            <div className={`h-full border-r border-[var(--border)] overflow-hidden ${
+              viewMode2D3D === '2d-only' ? 'w-full' : 'w-1/2'
+            }`}>
+              {activeMode === 'artwork' ? (
+                <ArtworkCanvasEditor />
+              ) : (
+                <PatternCADCanvas />
+              )}
+            </div>
+          )}
+
+          {viewMode2D3D !== '2d-only' && (
+            <div className={`h-full overflow-hidden relative ${
+              viewMode2D3D === '3d-only' ? 'w-full' : 'w-1/2'
+            }`}>
               <ErrorBoundary fallbackTitle="3D Viewport Encountered an Issue">
-                <Viewport3D ref={viewportRef} onPerformanceUpdate={setStats} />
+                <Viewport3D
+                  ref={viewportRef}
+                  onPerformanceUpdate={setStats}
+                  onSimulationStateChange={setIsSimRunning}
+                />
               </ErrorBoundary>
-            </>
+            </div>
           )}
         </div>
 
         {/* Right Resizable Inspector */}
         <ResizablePanel side="right" defaultWidth={320} minWidth={260} maxWidth={460}>
-          <RightSidebar onExportPNG={handleExportPNG} onExportGLB={handleExportGLB} />
+          <RightSidebar
+            onExportPNG={handleExportPNG}
+            onExportGLB={handleExportGLB}
+            onToggleSimulation={handleToggleSimulation}
+            onResetSimulation={handleResetSimulation}
+            isSimRunning={isSimRunning}
+          />
         </ResizablePanel>
       </main>
 

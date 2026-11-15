@@ -5,7 +5,9 @@ import {
 } from '@fashion-studio/editor-core';
 import {
   FABRIC_PRESETS,
-  GarmentPartId
+  PHYSICAL_FABRIC_PRESETS,
+  GarmentPartId,
+  PhysicalFabricProperties
 } from '@fashion-studio/garment-schema';
 import {
   Sliders,
@@ -15,15 +17,30 @@ import {
   Upload,
   Camera,
   Layers,
-  Sparkles
+  Scissors,
+  Activity,
+  Trash2,
+  RotateCw,
+  Play,
+  Pause,
+  RotateCcw
 } from 'lucide-react';
 
 interface RightSidebarProps {
   onExportPNG: (transparent: boolean) => void;
   onExportGLB: () => void;
+  onToggleSimulation?: () => void;
+  onResetSimulation?: () => void;
+  isSimRunning?: boolean;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExportGLB }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({
+  onExportPNG,
+  onExportGLB,
+  onToggleSimulation,
+  onResetSimulation,
+  isSimRunning = false
+}) => {
   const {
     project,
     activeMode,
@@ -40,7 +57,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
     updateArtworkLayer,
     setAvatarVisible,
     setWireframeMode,
-    wireframeMode
+    wireframeMode,
+    updateActiveGarment
   } = useEditorStore();
 
   const activeGarment = useActiveGarment();
@@ -48,77 +66,249 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
 
   const targetPartId: GarmentPartId = selectedPartId || 'body_front';
   const currentMaterial = activeGarment.materials[targetPartId] || activeGarment.materials.body_front;
+  const currentPhysical = activeGarment.physicalFabrics.default || PHYSICAL_FABRIC_PRESETS['heavy-cotton-fleece'];
   const activeLayer = activeGarment.artworkLayers.find((l) => l.id === selectedArtworkLayerId);
+  const seams = activeGarment.seams || [];
+  const pieces = activeGarment.patternPieces || [];
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        addArtworkLayer({
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          type: 'image',
-          surfaceId: activePrintZone,
-          visible: true,
-          locked: false,
-          opacity: 1.0,
-          position: [0.5, 0.45],
-          scale: [0.35, 0.35],
-          rotation: 0,
-          dataUrl
-        });
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleApplyPhysicalPreset = (preset: PhysicalFabricProperties) => {
+    updateActiveGarment((g) => ({
+      ...g,
+      physicalFabrics: {
+        ...g.physicalFabrics,
+        default: { ...preset }
+      }
+    }));
+  };
+
+  const handleUpdatePhysical = (updates: Partial<PhysicalFabricProperties>) => {
+    updateActiveGarment((g) => ({
+      ...g,
+      physicalFabrics: {
+        ...g.physicalFabrics,
+        default: { ...currentPhysical, ...updates }
+      }
+    }));
+  };
+
+  const handleUpdateSimulation = (updates: any) => {
+    updateActiveGarment((g) => ({
+      ...g,
+      simulationSettings: {
+        ...g.simulationSettings,
+        ...updates
+      }
+    }));
+  };
+
+  const handleToggleSeamOrientation = (seamId: string) => {
+    const updated = seams.map((s) =>
+      s.id === seamId ? { ...s, orientation: s.orientation === 'normal' ? 'reversed' as const : 'normal' as const } : s
+    );
+    updateActiveGarment((g) => ({ ...g, seams: updated }));
+  };
+
+  const handleDeleteSeam = (seamId: string) => {
+    const updated = seams.filter((s) => s.id !== seamId);
+    updateActiveGarment((g) => ({ ...g, seams: updated }));
   };
 
   return (
     <aside className="w-full bg-[var(--bg-panel)] border-l border-[var(--border)] flex flex-col h-full select-none text-[var(--text-primary)] overflow-y-auto">
-      {/* ---------------- MODE: DESIGN ---------------- */}
-      {activeMode === 'design' && (
+      {/* ---------------- MODE: SIMULATION ---------------- */}
+      {(activeMode === 'simulation' || activeMode === 'sewing') && (
+        <div className="p-4 space-y-5">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-[var(--accent)]" />
+              Cloth Physics Solver
+            </h3>
+            <span className="text-[10px] text-[var(--accent)] font-mono">XPBD Engine</span>
+          </div>
+
+          {/* Quick Solver Controls */}
+          <div className="flex gap-2">
+            <button
+              onClick={onToggleSimulation}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 shadow transition-all ${
+                isSimRunning ? 'bg-amber-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+            >
+              {isSimRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{isSimRunning ? 'Pause Draping' : 'Run Draping'}</span>
+            </button>
+            <button
+              onClick={onResetSimulation}
+              className="px-3 py-2 rounded-lg bg-[var(--bg-elevated)] hover:bg-[var(--accent-subtle)] border border-[var(--border)] text-xs text-[var(--text-secondary)] hover:text-white"
+              title="Reset Simulation Mesh"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Physical Fabric Presets */}
+          <div>
+            <label className="text-[11px] text-[var(--text-secondary)] block mb-2 font-medium">
+              Physical Fabric Behaviors
+            </label>
+            <div className="space-y-1.5">
+              {Object.entries(PHYSICAL_FABRIC_PRESETS).map(([key, preset]) => {
+                const isSelected = currentPhysical.id === preset.id;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleApplyPhysicalPreset(preset)}
+                    className={`w-full text-left p-2 rounded-lg text-xs border transition-colors flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                        : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium truncate">{preset.name}</div>
+                      <div className="text-[10px] opacity-70 font-mono">
+                        {preset.arealDensityGsm} GSM • Stretch: {Math.round(preset.warpStiffness * 100)}% • Bend: {Math.round(preset.bendingStiffness * 100)}%
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Physical Parameters Sliders */}
+          <div className="border-t border-[var(--border)] pt-4 space-y-3.5">
+            <h4 className="text-xs font-semibold uppercase tracking-wider">Physical Properties</h4>
+
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-[var(--text-secondary)]">Warp Stretch Resistance</span>
+                <span className="font-mono">{Math.round(currentPhysical.warpStiffness * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0.1}
+                max={1.0}
+                step={0.02}
+                value={currentPhysical.warpStiffness}
+                onChange={(e) => handleUpdatePhysical({ warpStiffness: Number(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-[var(--text-secondary)]">Bending / Fold Stiffness</span>
+                <span className="font-mono">{Math.round(currentPhysical.bendingStiffness * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0.05}
+                max={1.0}
+                step={0.02}
+                value={currentPhysical.bendingStiffness}
+                onChange={(e) => handleUpdatePhysical({ bendingStiffness: Number(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-[var(--text-secondary)]">Areal Density (Weight)</span>
+                <span className="font-mono">{currentPhysical.arealDensityGsm} GSM</span>
+              </div>
+              <input
+                type="range"
+                min={80}
+                max={600}
+                step={10}
+                value={currentPhysical.arealDensityGsm}
+                onChange={(e) => handleUpdatePhysical({ arealDensityGsm: Number(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {/* Active Seams List in Sewing Mode */}
+          {activeMode === 'sewing' && (
+            <div className="border-t border-[var(--border)] pt-4 space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between">
+                <span>Active Seams ({seams.length})</span>
+                <Scissors className="w-3.5 h-3.5 text-emerald-400" />
+              </h4>
+              <div className="space-y-1.5 max-h-52 overflow-y-auto">
+                {seams.map((seam) => (
+                  <div
+                    key={seam.id}
+                    className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border)] text-xs flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="font-medium text-[var(--text-primary)] truncate">{seam.name || seam.id}</div>
+                      <div className="text-[10px] text-[var(--text-secondary)] font-mono">
+                        Orientation: {seam.orientation}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleToggleSeamOrientation(seam.id)}
+                        className="p-1 hover:text-[var(--accent)]"
+                        title="Reverse Seam Direction"
+                      >
+                        <RotateCw className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSeam(seam.id)}
+                        className="p-1 hover:text-rose-400"
+                        title="Delete Seam"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ---------------- MODE: DESIGN / PATTERN ---------------- */}
+      {(activeMode === 'design' || activeMode === 'pattern') && (
         <div className="p-4 space-y-5">
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5 text-[var(--accent)]" />
-              Proportions & Fit
+              Proportions & Pattern Pieces
             </h3>
             <span className="text-[10px] text-[var(--accent)] font-mono">
-              {activeGarment.parameters.fit.toUpperCase()}
+              {pieces.length} Panels
             </span>
           </div>
 
-          {/* Fit Profile Selector */}
+          {/* Pattern Pieces Summary */}
           <div>
-            <label className="text-[11px] text-[var(--text-secondary)] block mb-1.5 font-medium">Silhouette Fit</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(['slim', 'regular', 'relaxed', 'oversized'] as const).map((fit) => (
-                <button
-                  key={fit}
-                  onClick={() => updateGarmentParameters({ fit })}
-                  className={`py-1.5 rounded text-[11px] capitalize transition-colors ${
-                    activeGarment.parameters.fit === fit
-                      ? 'bg-[var(--accent)] text-white font-medium shadow-sm'
-                      : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
-                  }`}
-                >
-                  {fit}
-                </button>
+            <label className="text-[11px] text-[var(--text-secondary)] block mb-1.5 font-medium">Garment Pattern Panels</label>
+            <div className="space-y-1">
+              {pieces.map((p) => (
+                <div key={p.id} className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border)] text-xs flex justify-between items-center">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-[10px] text-[var(--text-secondary)] font-mono">{p.outlinePoints.length} vertices</span>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Dimension Sliders */}
-          <div className="space-y-4">
+          {/* Measurements */}
+          <div className="space-y-4 border-t border-[var(--border)] pt-3">
             <div>
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-[var(--text-secondary)]">Body Length</span>
+                <span className="text-[var(--text-secondary)]">Garment Body Length</span>
                 <span className="font-mono">{(activeGarment.parameters.bodyLength / 10).toFixed(1)} cm</span>
               </div>
               <input
                 type="range"
-                min={580}
-                max={850}
+                min={500}
+                max={950}
                 value={activeGarment.parameters.bodyLength}
                 onChange={(e) => updateGarmentParameters({ bodyLength: Number(e.target.value) })}
                 className="w-full"
@@ -132,85 +322,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
               </div>
               <input
                 type="range"
-                min={480}
-                max={740}
+                min={400}
+                max={800}
                 value={activeGarment.parameters.chestWidth}
                 onChange={(e) => updateGarmentParameters({ chestWidth: Number(e.target.value) })}
                 className="w-full"
               />
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-[var(--text-secondary)]">Sleeve Length</span>
-                <span className="font-mono">{(activeGarment.parameters.sleeveLength / 10).toFixed(1)} cm</span>
-              </div>
-              <input
-                type="range"
-                min={500}
-                max={750}
-                value={activeGarment.parameters.sleeveLength}
-                onChange={(e) => updateGarmentParameters({ sleeveLength: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          {/* Modular Components */}
-          <div className="border-t border-[var(--border)] pt-4 space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider">Component Variants</h4>
-
-            {activeGarment.type === 'hoodie' && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-secondary)]">Hood Style</span>
-                  <select
-                    value={activeGarment.components.hood}
-                    onChange={(e) => updateComponentOption('hood', e.target.value as any)}
-                    className="bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
-                  >
-                    <option value="double-layer">Double Layer Cowl</option>
-                    <option value="single-layer">Single Layer</option>
-                    <option value="none">No Hood (Crewneck)</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-secondary)]">Pockets</span>
-                  <select
-                    value={activeGarment.components.pockets}
-                    onChange={(e) => updateComponentOption('pockets', e.target.value as any)}
-                    className="bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
-                  >
-                    <option value="kangaroo">Kangaroo Pouch</option>
-                    <option value="none">Clean Front (None)</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-secondary)]">Drawstrings</span>
-                  <select
-                    value={activeGarment.components.drawstrings}
-                    onChange={(e) => updateComponentOption('drawstrings', e.target.value as any)}
-                    className="bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
-                  >
-                    <option value="round-cord">Round Cord & Tips</option>
-                    <option value="none">None</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--text-secondary)]">Wrist Cuffs</span>
-              <select
-                value={activeGarment.components.cuffs}
-                onChange={(e) => updateComponentOption('cuffs', e.target.value as any)}
-                className="bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
-              >
-                <option value="ribbed">Ribbed Knit Cuffs</option>
-                <option value="hemmed">Straight Hemmed</option>
-              </select>
             </div>
           </div>
         </div>
@@ -224,12 +341,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
               <Palette className="w-3.5 h-3.5 text-[var(--accent)]" />
               Fabric & Materials
             </h3>
-            <span className="text-[10px] text-[var(--accent)] font-mono">
-              Target: {targetPartId.replace('_', ' ')}
-            </span>
+            <span className="text-[10px] text-[var(--accent)] font-mono">Visual PBR</span>
           </div>
 
-          {/* Color Picker & Swatches */}
+          {/* Color Picker */}
           <div>
             <label className="text-[11px] text-[var(--text-secondary)] block mb-1.5 font-medium">Fabric Base Color</label>
             <div className="flex items-center gap-3">
@@ -248,9 +363,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
             </div>
           </div>
 
-          {/* Fabric Presets */}
+          {/* Visual Presets */}
           <div>
-            <label className="text-[11px] text-[var(--text-secondary)] block mb-2 font-medium">Fabric Presets</label>
+            <label className="text-[11px] text-[var(--text-secondary)] block mb-2 font-medium">Visual PBR Presets</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(FABRIC_PRESETS).map(([key, preset]) => (
                 <button
@@ -258,10 +373,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
                   onClick={() => applyMaterialPresetToPart(targetPartId, preset)}
                   className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-elevated)] hover:bg-[var(--accent-subtle)] border border-[var(--border)] text-left transition-colors"
                 >
-                  <span
-                    className="w-4 h-4 rounded-full border border-black/20 flex-shrink-0"
-                    style={{ backgroundColor: preset.color }}
-                  />
+                  <span className="w-4 h-4 rounded-full border border-black/20 flex-shrink-0" style={{ backgroundColor: preset.color }} />
                   <div className="truncate">
                     <div className="text-[11px] text-[var(--text-primary)] truncate">{preset.name}</div>
                     <div className="text-[9px] text-[var(--text-secondary)] capitalize">{preset.category}</div>
@@ -270,296 +382,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
               ))}
             </div>
           </div>
-
-          {/* PBR Surface Physics */}
-          <div className="border-t border-[var(--border)] pt-4 space-y-3.5">
-            <h4 className="text-xs font-semibold uppercase tracking-wider">PBR Surface Parameters</h4>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-[var(--text-secondary)]">Roughness</span>
-                <span className="font-mono">{currentMaterial.roughness.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0.1}
-                max={1.0}
-                step={0.02}
-                value={currentMaterial.roughness}
-                onChange={(e) => updatePartMaterial(targetPartId, { roughness: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-[var(--text-secondary)]">Cloth Sheen</span>
-                <span className="font-mono">{currentMaterial.sheen.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1.0}
-                step={0.05}
-                value={currentMaterial.sheen}
-                onChange={(e) => updatePartMaterial(targetPartId, { sheen: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-[var(--text-secondary)]">Weave Relief (Normal Scale)</span>
-                <span className="font-mono">{currentMaterial.normalScale.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={2.0}
-                step={0.1}
-                value={currentMaterial.normalScale}
-                onChange={(e) => updatePartMaterial(targetPartId, { normalScale: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] text-[var(--text-secondary)] block mb-1">Weave Pattern</label>
-              <select
-                value={currentMaterial.texturePattern}
-                onChange={(e) => updatePartMaterial(targetPartId, { texturePattern: e.target.value as any })}
-                className="w-full bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2.5 py-1.5 outline-none"
-              >
-                <option value="knit">Looped Heavy Knit</option>
-                <option value="twill">45° Twill Denim Weave</option>
-                <option value="ribbed">Ribbed Ridge Knit</option>
-                <option value="terry">French Terry Loops</option>
-                <option value="plain">Clean Plain Weave</option>
-              </select>
-            </div>
-
-            <button
-              onClick={() => applyMaterialPresetToAllParts(currentMaterial)}
-              className="w-full mt-2 py-2 rounded bg-[var(--bg-elevated)] hover:bg-[var(--accent-subtle)] border border-[var(--border)] text-xs font-medium transition-colors"
-            >
-              Apply Fabric to Entire Garment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------- MODE: ARTWORK ---------------- */}
-      {activeMode === 'artwork' && (
-        <div className="p-4 space-y-5">
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-              <Type className="w-3.5 h-3.5 text-[var(--accent)]" />
-              Artwork & Graphics
-            </h3>
-          </div>
-
-          {/* Surface Print Zone Switcher */}
-          <div>
-            <label className="text-[11px] text-[var(--text-secondary)] block mb-1.5 font-medium">Print Zone</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                onClick={() => setActivePrintZone('front-print')}
-                className={`py-1.5 rounded text-xs transition-colors ${
-                  activePrintZone === 'front-print'
-                    ? 'bg-[var(--accent)] text-white font-medium'
-                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border)]'
-                }`}
-              >
-                Front Chest
-              </button>
-              <button
-                onClick={() => setActivePrintZone('back-print')}
-                className={`py-1.5 rounded text-xs transition-colors ${
-                  activePrintZone === 'back-print'
-                    ? 'bg-[var(--accent)] text-white font-medium'
-                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border)]'
-                }`}
-              >
-                Back Panel
-              </button>
-            </div>
-          </div>
-
-          {/* Add Layer Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="file"
-              ref={fileUploadRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="hidden"
-            />
-            <button
-              onClick={() => fileUploadRef.current?.click()}
-              className="flex items-center justify-center gap-1.5 py-2 rounded bg-[var(--bg-elevated)] hover:bg-[var(--accent-subtle)] border border-[var(--border)] text-xs text-[var(--text-primary)] transition-colors"
-            >
-              <Upload className="w-3.5 h-3.5 text-[var(--accent)]" />
-              Upload Logo
-            </button>
-
-            <button
-              onClick={() =>
-                addArtworkLayer({
-                  name: 'Custom Typography',
-                  type: 'text',
-                  surfaceId: activePrintZone,
-                  visible: true,
-                  locked: false,
-                  opacity: 1.0,
-                  position: [0.5, 0.45],
-                  scale: [0.35, 0.35],
-                  rotation: 0,
-                  text: 'STUDIO 2026',
-                  fontSize: 26,
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 'bold',
-                  color: '#ffffff',
-                  letterSpacing: 4
-                })
-              }
-              className="flex items-center justify-center gap-1.5 py-2 rounded bg-[var(--bg-elevated)] hover:bg-[var(--accent-subtle)] border border-[var(--border)] text-xs text-[var(--text-primary)] transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5 text-[var(--positive)]" />
-              Add Text
-            </button>
-          </div>
-
-          {/* Active Layer Controls */}
-          {activeLayer ? (
-            <div className="border-t border-[var(--border)] pt-4 space-y-3.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold truncate">{activeLayer.name}</span>
-                <span className="text-[10px] text-[var(--accent)] font-mono capitalize">{activeLayer.type}</span>
-              </div>
-
-              {activeLayer.type === 'text' && (
-                <>
-                  <div>
-                    <label className="text-[11px] text-[var(--text-secondary)] block mb-1">Text Content</label>
-                    <input
-                      type="text"
-                      value={activeLayer.text || ''}
-                      onChange={(e) => updateArtworkLayer(activeLayer.id, { text: e.target.value })}
-                      className="w-full bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2.5 py-1.5 outline-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <label className="text-[11px] text-[var(--text-secondary)] block mb-1">Color</label>
-                      <input
-                        type="color"
-                        value={activeLayer.color || '#ffffff'}
-                        onChange={(e) => updateArtworkLayer(activeLayer.id, { color: e.target.value })}
-                        className="w-full h-8 rounded border border-[var(--border)] cursor-pointer bg-transparent"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-[11px] text-[var(--text-secondary)] block mb-1">Letter Spacing</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={20}
-                        value={activeLayer.letterSpacing || 0}
-                        onChange={(e) =>
-                          updateArtworkLayer(activeLayer.id, { letterSpacing: Number(e.target.value) })
-                        }
-                        className="w-full bg-[var(--bg-elevated)] text-xs text-[var(--text-primary)] border border-[var(--border)] rounded px-2 py-1.5 outline-none"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[var(--text-secondary)]">Vertical (Y)</span>
-                    <span className="font-mono">{Math.round(activeLayer.position[1] * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.15}
-                    max={0.85}
-                    step={0.01}
-                    value={activeLayer.position[1]}
-                    onChange={(e) =>
-                      updateArtworkLayer(activeLayer.id, {
-                        position: [activeLayer.position[0], Number(e.target.value)]
-                      })
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[var(--text-secondary)]">Horizontal (X)</span>
-                    <span className="font-mono">{Math.round(activeLayer.position[0] * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.15}
-                    max={0.85}
-                    step={0.01}
-                    value={activeLayer.position[0]}
-                    onChange={(e) =>
-                      updateArtworkLayer(activeLayer.id, {
-                        position: [Number(e.target.value), activeLayer.position[1]]
-                      })
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[var(--text-secondary)]">Scale</span>
-                    <span className="font-mono">{Math.round(activeLayer.scale[0] * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.1}
-                    max={0.9}
-                    step={0.02}
-                    value={activeLayer.scale[0]}
-                    onChange={(e) => {
-                      const s = Number(e.target.value);
-                      updateArtworkLayer(activeLayer.id, { scale: [s, s] });
-                    }}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[var(--text-secondary)]">Rotation</span>
-                    <span className="font-mono">{activeLayer.rotation}°</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={-180}
-                    max={180}
-                    step={1}
-                    value={activeLayer.rotation}
-                    onChange={(e) =>
-                      updateArtworkLayer(activeLayer.id, { rotation: Number(e.target.value) })
-                    }
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6 text-[var(--text-secondary)] text-xs italic">
-              Select an artwork layer from the left tree or click "Add Text" to begin.
-            </div>
-          )}
         </div>
       )}
 
@@ -574,7 +396,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
           <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
             <div>
               <div className="text-xs font-medium">Show Avatar Mannequin</div>
-              <div className="text-[10px] text-[var(--text-secondary)]">Visualize garment ease over anatomical frame</div>
+              <div className="text-[10px] text-[var(--text-secondary)]">Anatomical colliders for cloth draping</div>
             </div>
             <input
               type="checkbox"
@@ -597,7 +419,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
               </div>
               <div className="flex justify-between border-t border-[var(--border)] pt-1 text-[var(--positive)] font-semibold font-sans">
                 <span>Calculated Ease</span>
-                <span>+{((activeGarment.parameters.chestWidth * 2 - 980) / 10).toFixed(0)} cm ({activeGarment.parameters.fit})</span>
+                <span>+{((activeGarment.parameters.chestWidth * 2 - 980) / 10).toFixed(0)} cm</span>
               </div>
             </div>
           </div>
@@ -617,7 +439,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
           <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)]">
             <div>
               <div className="text-xs font-medium">Topology Wireframe</div>
-              <div className="text-[10px] text-[var(--text-secondary)]">Inspect 3D mesh polygon distribution</div>
+              <div className="text-[10px] text-[var(--text-secondary)]">Inspect simulated mesh triangles</div>
             </div>
             <input
               type="checkbox"
@@ -649,10 +471,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ onExportPNG, onExpor
               onClick={onExportGLB}
               className="w-full py-2.5 px-3 rounded bg-[var(--accent)] hover:opacity-90 text-xs text-white font-medium shadow flex items-center justify-center gap-2 transition-opacity"
             >
-              Export Standard GLB (glTF 2.0)
+              Export Simulated GLB (glTF 2.0)
             </button>
             <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-              Standard GLB binary with baked PBR materials, procedural textures, and custom decals ready for Blender, Unreal, or AR.
+              Exports the actual draped 3D geometry with sewn seams, embedded materials, and vertex normals.
             </p>
           </div>
         </div>

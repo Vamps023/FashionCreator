@@ -7,6 +7,7 @@
   "dependencies": {
     "@fashion-studio/garment-schema": "workspace:*",
     "@fashion-studio/material-engine": "workspace:*",
+    "@fashion-studio/pattern-engine": "workspace:*",
     "three": "^0.174.0"
   }
 }

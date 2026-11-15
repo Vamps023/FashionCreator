@@ -54,31 +54,45 @@ export const LeftSidebar: React.FC = () => {
           <span className="text-[10px] text-[var(--text-secondary)] font-mono">v1.0</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           <button
             onClick={() => switchGarmentTemplate('hoodie')}
-            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
               activeGarment.type === 'hoodie'
                 ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
                 : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <span className="text-xl mb-1">🧥</span>
-            <span className="text-xs">Hoodie</span>
+            <span className="text-lg mb-0.5">🧥</span>
+            <span className="text-[11px] leading-tight font-medium">Hoodie</span>
             <span className="text-[9px] opacity-70">Oversized</span>
           </button>
 
           <button
             onClick={() => switchGarmentTemplate('tshirt')}
-            className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
               activeGarment.type === 'tshirt'
                 ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
                 : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <span className="text-xl mb-1">👕</span>
-            <span className="text-xs">T-Shirt</span>
+            <span className="text-lg mb-0.5">👕</span>
+            <span className="text-[11px] leading-tight font-medium">T-Shirt</span>
             <span className="text-[9px] opacity-70">Boxy Fit</span>
+          </button>
+
+          <button
+            onClick={() => switchGarmentTemplate('tunic')}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
+              activeGarment.type === 'tunic'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+            title="Reference 2-panel sewn garment with active XPBD cloth simulation"
+          >
+            <span className="text-lg mb-0.5">🎽</span>
+            <span className="text-[11px] leading-tight font-medium">2P Tunic</span>
+            <span className="text-[9px] opacity-70">Sim Ready</span>
           </button>
         </div>
       </div>

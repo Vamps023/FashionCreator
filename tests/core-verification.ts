@@ -3,13 +3,16 @@ import {
   createInitialProject,
   createDefaultHoodieInstance,
   createDefaultTShirtInstance,
+  createTwoPanelTunicInstance,
+  PHYSICAL_FABRIC_PRESETS,
   FABRIC_PRESETS,
   validateAndMigrateProject,
   ProjectDocumentSchema
 } from '../packages/garment-schema/src/index';
 import { HistoryManager, Command } from '../packages/editor-core/src/history';
-import { generateHoodiePatterns, exportPatternToSVG } from '../packages/pattern-engine/src/index';
-import { XPBDClothSolver } from '../packages/simulation-adapter/src/index';
+import { generateHoodiePatterns, exportPatternToSVG, triangulatePatternPiece } from '../packages/pattern-engine/src/index';
+import { XPBDClothSolver, GarmentClothSolver } from '../packages/simulation-adapter/src/index';
+import { assembleGarmentFromPatterns } from '../packages/garment-engine/src/index';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) {
@@ -191,6 +194,111 @@ assert(!isNaN(simulatedY) && isFinite(simulatedY), 'Phase 7: Solver maintains nu
 
 testGeom.dispose();
 
+// ---------------------------------------------------------
+// [TEST SUITE 9] 2D-TO-3D MESHING & DIRECTED SEAM ASSEMBLY
+// ---------------------------------------------------------
+console.log('\n--- Test Suite 9: 2D-to-3D Meshing & Seam Assembly ---');
+const tunic = createTwoPanelTunicInstance();
+assert(tunic.patternPieces.length === 2, 'Suite 9: Tunic reference has 2 pattern pieces (Front & Back)');
+assert(tunic.seams.length === 4, 'Suite 9: Tunic has 4 active seams (2 shoulders, 2 side seams)');
+
+// Test 2D Triangulator directly
+const frontPiece = tunic.patternPieces[0];
+const triMesh = triangulatePatternPiece(frontPiece, 35); // 35mm particle distance
+assert(triMesh.vertices.length > frontPiece.outlinePoints.length, 'Suite 9: Triangulation produces boundary + internal vertices');
+assert(triMesh.indices.length > 10, 'Suite 9: Triangulation produces robust triangle index list');
+assert(triMesh.boundaryIndices.length > 0, 'Suite 9: Triangulation tracks boundary vertex indices for sewing');
+
+// Assemble 3D garment
+const assembly = assembleGarmentFromPatterns(tunic.patternPieces, tunic.seams);
+assert(assembly.geometry.getAttribute('position').count > 50, 'Suite 9: Assembled 3D geometry contains over 50 vertices');
+assert(assembly.sewingConstraints.length > 0, 'Suite 9: Assembled garment identifies valid vertex sewing pairs across seams');
+console.log(`   Assembly generated ${assembly.geometry.getAttribute('position').count} vertices and ${assembly.sewingConstraints.length} seam spring pairs`);
+
+// Verify 3D arrangement: Front should have z > 0 and Back should have z < 0
+const posAttr = assembly.geometry.getAttribute('position') as THREE.BufferAttribute;
+let hasPositiveZ = false;
+let hasNegativeZ = false;
+for (let i = 0; i < posAttr.count; i++) {
+  if (posAttr.getZ(i) > 0.05) hasPositiveZ = true;
+  if (posAttr.getZ(i) < -0.05) hasNegativeZ = true;
+}
+assert(hasPositiveZ && hasNegativeZ, 'Suite 9: 3D pattern arrangement places front and back panels on opposite sides of avatar');
+
+// ---------------------------------------------------------
+// [TEST SUITE 10] XPBD CLOTH SOLVER: SEAM CONVERGENCE & DRAPING
+// ---------------------------------------------------------
+console.log('\n--- Test Suite 10: GarmentClothSolver XPBD Draping & Seam Pulling ---');
+const colliders = [
+  { type: 'sphere' as const, centerA: new THREE.Vector3(0, 0.2, 0), radius: 0.16 }, // Chest collider
+  { type: 'sphere' as const, centerA: new THREE.Vector3(0, -0.2, 0), radius: 0.15 } // Torso collider
+];
+
+const fabricProps = PHYSICAL_FABRIC_PRESETS['heavy-cotton-fleece'];
+const garmentSolver = new GarmentClothSolver(assembly.geometry);
+garmentSolver.sewingConstraints = assembly.sewingConstraints.map((sc) => ({
+  vA: sc.vertexA,
+  vB: sc.vertexB,
+  restLength: sc.targetLength,
+  stiffness: 0.95
+}));
+garmentSolver.avatarColliders = colliders;
+garmentSolver.fabric.warpStiffness = fabricProps.warpStiffness;
+garmentSolver.fabric.weftStiffness = fabricProps.weftStiffness;
+garmentSolver.fabric.bendingStiffness = fabricProps.bendingStiffness;
+garmentSolver.fabric.arealDensityGsm = fabricProps.arealDensityGsm;
+
+// Measure initial average distance between first 5 seam pairs
+let initialSeamDistSum = 0;
+const testPairCount = Math.min(5, garmentSolver.sewingConstraints.length);
+for (let p = 0; p < testPairCount; p++) {
+  const pair = garmentSolver.sewingConstraints[p];
+  const pA = new THREE.Vector3(posAttr.getX(pair.vA), posAttr.getY(pair.vA), posAttr.getZ(pair.vA));
+  const pB = new THREE.Vector3(posAttr.getX(pair.vB), posAttr.getY(pair.vB), posAttr.getZ(pair.vB));
+  initialSeamDistSum += pA.distanceTo(pB);
+}
+const initialAvgSeamDist = initialSeamDistSum / testPairCount;
+
+// Run 25 physics simulation steps with sewing springs
+for (let step = 0; step < 25; step++) {
+  garmentSolver.step(0.016, 1.0); // dt=16ms, sewingMultiplier=1.0
+}
+
+let simulatedSeamDistSum = 0;
+for (let p = 0; p < testPairCount; p++) {
+  const pair = garmentSolver.sewingConstraints[p];
+  const pA = new THREE.Vector3(posAttr.getX(pair.vA), posAttr.getY(pair.vA), posAttr.getZ(pair.vA));
+  const pB = new THREE.Vector3(posAttr.getX(pair.vB), posAttr.getY(pair.vB), posAttr.getZ(pair.vB));
+  simulatedSeamDistSum += pA.distanceTo(pB);
+}
+const simulatedAvgSeamDist = simulatedSeamDistSum / testPairCount;
+
+console.log(`   Initial average seam distance: ${(initialAvgSeamDist * 100).toFixed(2)} cm`);
+console.log(`   Simulated average seam distance: ${(simulatedAvgSeamDist * 100).toFixed(2)} cm`);
+assert(simulatedAvgSeamDist < initialAvgSeamDist, 'Suite 10: Sewing springs successfully pull seam boundaries closer together');
+
+// Check that positions are valid non-NaN numbers
+let allFinite = true;
+for (let i = 0; i < posAttr.count; i++) {
+  if (isNaN(posAttr.getX(i)) || isNaN(posAttr.getY(i)) || isNaN(posAttr.getZ(i))) {
+    allFinite = false;
+    break;
+  }
+}
+assert(allFinite, 'Suite 10: Garment cloth solver maintains strict numerical stability (no NaNs)');
+
+// ---------------------------------------------------------
+// [TEST SUITE 11] PHYSICAL FABRIC PROPERTY DIFFERENTIATION
+// ---------------------------------------------------------
+console.log('\n--- Test Suite 11: Physical Fabric Behavior Differentiation ---');
+const silkPreset = PHYSICAL_FABRIC_PRESETS['fluid-silk-satin'];
+const denimPreset = PHYSICAL_FABRIC_PRESETS['raw-rigid-denim'];
+assert(silkPreset.arealDensityGsm < denimPreset.arealDensityGsm, 'Suite 11: Silk is significantly lighter than denim (95 GSM vs 420 GSM)');
+assert(denimPreset.bendingStiffness > silkPreset.bendingStiffness, 'Suite 11: Denim has higher bending resistance than silk');
+assert(denimPreset.warpStiffness > silkPreset.warpStiffness, 'Suite 11: Denim has higher warp tensile stiffness than silk');
+
+assembly.geometry.dispose();
+
 console.log('\n================================================================');
-console.log('🎉 ALL 8 TEST SUITES (24/24 ACCEPTANCE CHECKS) PASSED CLEANLY!');
+console.log('🎉 ALL 11 TEST SUITES (36/36 ACCEPTANCE CHECKS) PASSED CLEANLY!');
 console.log('================================================================\n');

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import {
   useEditorStore,
   useActiveGarment
@@ -8,27 +8,36 @@ import {
   PerformanceStats
 } from '@fashion-studio/renderer-3d';
 import {
-  Compass,
-  Grid,
   Box,
   Eye,
   Columns,
-  Maximize2
+  Play,
+  Pause,
+  RotateCcw,
+  Activity,
+  Layers
 } from 'lucide-react';
 import * as THREE from 'three';
 
 export interface Viewport3DHandle {
   takeSnapshot: (transparent: boolean) => string;
   getGarmentGroup: () => THREE.Group | null;
+  startSimulation: () => void;
+  pauseSimulation: () => void;
+  resetSimulation: () => void;
+  toggleSimulation: () => void;
+  isSimulating: () => boolean;
 }
 
 interface Viewport3DProps {
   onPerformanceUpdate: (stats: PerformanceStats) => void;
+  onSimulationStateChange?: (isRunning: boolean) => void;
 }
 
 export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPerformanceUpdate }, ref) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<ViewportController | null>(null);
+  const [isSimRunning, setIsSimRunning] = useState(false);
 
   const {
     project,
@@ -51,6 +60,30 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
     },
     getGarmentGroup: () => {
       return controllerRef.current ? controllerRef.current.getGarmentGroup() : null;
+    },
+    startSimulation: () => {
+      controllerRef.current?.startSimulation();
+      setIsSimRunning(true);
+    },
+    pauseSimulation: () => {
+      controllerRef.current?.pauseSimulation();
+      setIsSimRunning(false);
+    },
+    resetSimulation: () => {
+      controllerRef.current?.resetSimulation();
+      setIsSimRunning(false);
+    },
+    toggleSimulation: () => {
+      if (controllerRef.current?.isSimulating()) {
+        controllerRef.current?.pauseSimulation();
+        setIsSimRunning(false);
+      } else {
+        controllerRef.current?.startSimulation();
+        setIsSimRunning(true);
+      }
+    },
+    isSimulating: () => {
+      return controllerRef.current ? controllerRef.current.isSimulating() : false;
     }
   }));
 
@@ -61,12 +94,20 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
     controller.init(mountRef.current);
     controllerRef.current = controller;
 
+    controller.onSimulationStateChange = (running) => {
+      setIsSimRunning(running);
+    };
+
     controller.onPartSelected = (partId) => {
       selectPart(partId);
     };
 
     controller.onPerformanceStats = (stats) => {
       onPerformanceUpdate(stats);
+    };
+
+    controller.onSimulationStateChange = (running) => {
+      setIsSimRunning(running);
     };
 
     // Initial setup
@@ -80,48 +121,61 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
     };
   }, []);
 
-  // Update garment whenever activeGarment or wireframeMode changes
+  // Update garment when activeGarment or its patternPieces / seams change
   useEffect(() => {
     if (controllerRef.current) {
       controllerRef.current.setGarment(activeGarment, wireframeMode);
     }
   }, [activeGarment, wireframeMode]);
 
-  // Update selected part highlight in Three.js
   useEffect(() => {
     if (controllerRef.current) {
       controllerRef.current.setSelectedPart(selectedPartId);
     }
   }, [selectedPartId]);
 
-  // Update camera preset
   useEffect(() => {
     if (controllerRef.current) {
       controllerRef.current.setCameraPreset(cameraPreset);
     }
   }, [cameraPreset]);
 
-  // Update avatar mannequin
   useEffect(() => {
     if (controllerRef.current) {
       controllerRef.current.setAvatar(project.avatar);
     }
   }, [project.avatar]);
 
-  // Update studio environment
   useEffect(() => {
     if (controllerRef.current) {
       controllerRef.current.setEnvironment(project.environment);
     }
   }, [project.environment]);
 
+  const toggleSimulation = () => {
+    if (!controllerRef.current) return;
+    if (isSimRunning) {
+      controllerRef.current.pauseSimulation();
+      setIsSimRunning(false);
+    } else {
+      controllerRef.current.startSimulation();
+      setIsSimRunning(true);
+    }
+  };
+
+  const resetSimulation = () => {
+    if (!controllerRef.current) return;
+    controllerRef.current.resetSimulation();
+    setIsSimRunning(false);
+  };
+
   return (
-    <div className="relative w-full h-full flex-1 bg-studio-950 overflow-hidden">
+    <div className="relative w-full h-full flex-1 bg-[var(--bg-app)] overflow-hidden">
       {/* 3D Canvas Mount Point */}
       <div ref={mountRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing" />
 
       {/* Top Floating Viewport Control Bar */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-studio-900/90 backdrop-blur-md px-2 py-1.5 rounded-lg border border-studio-750 shadow-lg text-xs">
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-[var(--bg-panel)]/90 backdrop-blur-md px-2 py-1.5 rounded-lg border border-[var(--border)] shadow-lg text-xs">
         {/* Preset Angles */}
         {(['perspective', 'front', 'back', 'left', 'right'] as const).map((angle) => (
           <button
@@ -129,21 +183,21 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
             onClick={() => setCameraPreset(angle)}
             className={`px-2 py-1 rounded capitalize font-medium transition-colors ${
               cameraPreset === angle
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-studio-400 hover:text-white hover:bg-studio-800'
+                ? 'bg-[var(--accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
             }`}
           >
             {angle === 'perspective' ? '3D' : angle}
           </button>
         ))}
 
-        <div className="w-[1px] h-4 bg-studio-750 mx-1" />
+        <div className="w-[1px] h-4 bg-[var(--border)] mx-1" />
 
         {/* Wireframe toggle */}
         <button
           onClick={() => setWireframeMode(!wireframeMode)}
           className={`p-1.5 rounded transition-colors ${
-            wireframeMode ? 'bg-blue-600 text-white' : 'text-studio-400 hover:text-white hover:bg-studio-800'
+            wireframeMode ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-elevated)]'
           }`}
           title="Toggle Wireframe"
         >
@@ -154,7 +208,7 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
         <button
           onClick={() => setAvatarVisible(!project.avatar.visible)}
           className={`p-1.5 rounded transition-colors ${
-            project.avatar.visible ? 'bg-blue-600 text-white' : 'text-studio-400 hover:text-white hover:bg-studio-800'
+            project.avatar.visible ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-elevated)]'
           }`}
           title="Toggle Avatar Mannequin"
         >
@@ -165,24 +219,55 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
         <button
           onClick={() => setViewMode2D3D(viewMode2D3D === 'split' ? '3d-only' : 'split')}
           className={`p-1.5 rounded transition-colors ${
-            viewMode2D3D === 'split' ? 'bg-blue-600 text-white' : 'text-studio-400 hover:text-white hover:bg-studio-800'
+            viewMode2D3D === 'split' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-elevated)]'
           }`}
-          title="Toggle 2D Print Layout / 3D Split View"
+          title="Toggle 2D Pattern / 3D Split View"
         >
           <Columns className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Selected Part Overlay Badge */}
+      {/* Center Top: Simulation Play / Pause / Reset Bar */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 bg-[var(--bg-panel)]/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-[var(--border)] shadow-xl text-xs">
+        <button
+          onClick={toggleSimulation}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition-all ${
+            isSimRunning
+              ? 'bg-amber-500 text-white shadow-md'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
+          }`}
+          title="Play / Pause Cloth Simulation (Spacebar)"
+        >
+          {isSimRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+          <span>{isSimRunning ? 'Pause Draping' : 'Simulate Cloth'}</span>
+        </button>
+
+        <button
+          onClick={resetSimulation}
+          className="p-1.5 rounded-full hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          title="Reset Simulation to Initial Rest Placement"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-[1px] h-4 bg-[var(--border)] mx-1" />
+
+        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[var(--text-secondary)]">
+          <span className={`w-2 h-2 rounded-full ${isSimRunning ? 'bg-emerald-400 animate-ping' : 'bg-zinc-600'}`} />
+          <span>{isSimRunning ? 'XPBD Active' : 'Physics Idle'}</span>
+        </div>
+      </div>
+
+      {/* Selected Part Badge */}
       {selectedPartId && (
-        <div className="absolute top-3 right-3 z-10 bg-studio-900/80 backdrop-blur-sm px-3 py-1 rounded border border-studio-750 text-[11px] text-blue-400 font-mono shadow-sm flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        <div className="absolute top-3 right-3 z-10 bg-[var(--bg-panel)]/90 backdrop-blur-sm px-3 py-1 rounded border border-[var(--border)] text-[11px] text-[var(--accent)] font-mono shadow-sm flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
           <span>Active Part: {selectedPartId.replace('_', ' ').toUpperCase()}</span>
         </div>
       )}
 
-      {/* Center Viewport Watermark / Navigation hint */}
-      <div className="absolute bottom-3 left-3 z-10 pointer-events-none text-[10px] text-studio-500 font-mono flex items-center gap-2">
+      {/* Navigation Guide Hint */}
+      <div className="absolute bottom-3 left-3 z-10 pointer-events-none text-[10px] text-[var(--text-secondary)] font-mono flex items-center gap-2">
         <span>L-Click: Rotate</span>
         <span>•</span>
         <span>R-Click: Pan</span>

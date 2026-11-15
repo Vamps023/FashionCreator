@@ -11,13 +11,15 @@ import {
   SurfacePrintZone,
   createInitialProject,
   createDefaultHoodieInstance,
-  createDefaultTShirtInstance
+  createDefaultTShirtInstance,
+  createTwoPanelTunicInstance
 } from '@fashion-studio/garment-schema';
 import { HistoryManager } from './history';
 
 export interface EditorState {
   // Document Data
   project: GarmentProject;
+  activeGarmentId: string;
   
   // Editor UI State
   activeMode: EditorMode;
@@ -47,6 +49,7 @@ export interface EditorState {
 
   // Document Mutators with Undo/Redo recording
   updateProjectName: (name: string) => void;
+  updateActiveGarment: (updater: (g: GarmentInstance) => GarmentInstance) => void;
   updateGarmentParameters: (params: Partial<GarmentParameters>) => void;
   updateComponentOption: <K extends keyof GarmentComponentOptions>(
     slot: K,
@@ -63,7 +66,7 @@ export interface EditorState {
   reorderArtworkLayers: (sourceIndex: number, destIndex: number) => void;
 
   // Template / Project level
-  switchGarmentTemplate: (type: 'hoodie' | 'tshirt') => void;
+  switchGarmentTemplate: (type: 'hoodie' | 'tshirt' | 'tunic') => void;
   loadProject: (project: GarmentProject) => void;
   resetProject: () => void;
   undo: () => void;
@@ -90,53 +93,66 @@ function updateActiveGarmentInProject(
   };
 }
 
-export const useEditorStore = create<EditorState>((set, get) => ({
-  project: createInitialProject(),
-  activeMode: 'design',
-  selectedPartId: 'body_front',
-  selectedArtworkLayerId: 'art-front-logo-1',
-  activePrintZone: 'front-print',
-  cameraPreset: 'perspective',
-  wireframeMode: false,
-  viewMode2D3D: 'split',
-  statusMessage: 'Ready · Saved locally',
-  isDirty: false,
-  canUndo: false,
-  canRedo: false,
+export const useEditorStore = create<EditorState>((set, get) => {
+  const initialProject = createInitialProject();
+  return {
+    project: initialProject,
+    activeGarmentId: initialProject.activeGarmentId,
+    activeMode: 'design',
+    selectedPartId: 'body_front',
+    selectedArtworkLayerId: 'art-front-logo-1',
+    activePrintZone: 'front-print',
+    cameraPreset: 'perspective',
+    wireframeMode: false,
+    viewMode2D3D: 'split',
+    statusMessage: 'Ready · Saved locally',
+    isDirty: false,
+    canUndo: false,
+    canRedo: false,
 
-  setActiveMode: (mode) => set({ activeMode: mode }),
-  
-  selectPart: (partId) => set({ 
-    selectedPartId: partId,
-    // When a part is selected, contextually align mode or surface if appropriate
-    activePrintZone: partId === 'body_back' ? 'back-print' : 'front-print'
-  }),
+    setActiveMode: (mode) => set({ activeMode: mode }),
+    
+    selectPart: (partId) => set({ 
+      selectedPartId: partId,
+      // When a part is selected, contextually align mode or surface if appropriate
+      activePrintZone: partId === 'body_back' ? 'back-print' : 'front-print'
+    }),
 
-  selectArtworkLayer: (layerId) => set({ selectedArtworkLayerId: layerId }),
+    selectArtworkLayer: (layerId) => set({ selectedArtworkLayerId: layerId }),
 
-  setActivePrintZone: (zone) => set({ activePrintZone: zone }),
+    setActivePrintZone: (zone) => set({ activePrintZone: zone }),
 
-  setCameraPreset: (preset) => set({ cameraPreset: preset }),
+    setCameraPreset: (preset) => set({ cameraPreset: preset }),
 
-  setWireframeMode: (enabled) => set({ wireframeMode: enabled }),
+    setWireframeMode: (enabled) => set({ wireframeMode: enabled }),
 
-  setViewMode2D3D: (mode) => set({ viewMode2D3D: mode }),
+    setViewMode2D3D: (mode) => set({ viewMode2D3D: mode }),
 
-  setStatusMessage: (statusMessage) => set({ statusMessage }),
+    setStatusMessage: (statusMessage) => set({ statusMessage }),
 
-  setAvatarVisible: (visible) => {
-    const prev = get().project;
-    const next: GarmentProject = {
-      ...prev,
-      avatar: { ...prev.avatar, visible }
-    };
-    set({ project: next });
-  },
+    setAvatarVisible: (visible) => {
+      const prev = get().project;
+      const next: GarmentProject = {
+        ...prev,
+        avatar: { ...prev.avatar, visible }
+      };
+      set({ project: next });
+    },
 
-  updateProjectName: (name) => {
-    const prev = get().project;
-    set({ project: { ...prev, name } });
-  },
+    updateProjectName: (name) => {
+      const prev = get().project;
+      set({ project: { ...prev, name } });
+    },
+
+    updateActiveGarment: (updater) => {
+      const prev = get().project;
+      const next = updateActiveGarmentInProject(prev, updater);
+      set({
+        project: next,
+        activeGarmentId: next.activeGarmentId,
+        isDirty: true
+      });
+    },
 
   updateGarmentParameters: (params) => {
     const prev = get().project;
@@ -423,7 +439,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   switchGarmentTemplate: (type) => {
-    const newGarment = type === 'hoodie' ? createDefaultHoodieInstance() : createDefaultTShirtInstance();
+    let newGarment;
+    if (type === 'hoodie') {
+      newGarment = createDefaultHoodieInstance();
+    } else if (type === 'tshirt') {
+      newGarment = createDefaultTShirtInstance();
+    } else {
+      newGarment = createTwoPanelTunicInstance();
+    }
     const prev = get().project;
     const next: GarmentProject = {
       ...prev,
@@ -434,6 +457,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     history.clear();
     set({
       project: next,
+      activeGarmentId: newGarment.id,
       selectedPartId: 'body_front',
       selectedArtworkLayerId: newGarment.artworkLayers[0]?.id || null,
       canUndo: false,
@@ -447,6 +471,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const active = getActiveGarment(project);
     set({
       project,
+      activeGarmentId: project.activeGarmentId,
       selectedPartId: 'body_front',
       selectedArtworkLayerId: active.artworkLayers[0]?.id || null,
       canUndo: false,
@@ -461,6 +486,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const initial = createInitialProject();
     set({
       project: initial,
+      activeGarmentId: initial.activeGarmentId,
       selectedPartId: 'body_front',
       selectedArtworkLayerId: initial.garments[0].artworkLayers[0]?.id || null,
       canUndo: false,
@@ -495,7 +521,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       });
     }
   }
-}));
+  };
+});
 
 // Export helper for accessing active garment easily
 export function useActiveGarment() {

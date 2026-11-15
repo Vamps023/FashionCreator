@@ -20,7 +20,9 @@ import {
   Grid,
   CheckCircle,
   LayoutDashboard,
-  Box
+  Box,
+  Link2,
+  Activity
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -53,9 +55,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   const modes: { id: EditorMode; label: string; icon: React.ReactNode }[] = [
     { id: 'design', label: 'Design', icon: <Scissors className="w-3.5 h-3.5" /> },
+    { id: 'pattern', label: 'Pattern CAD', icon: <Grid className="w-3.5 h-3.5" /> },
+    { id: 'sewing', label: 'Sewing', icon: <Link2 className="w-3.5 h-3.5" /> },
+    { id: 'simulation', label: 'Cloth Sim', icon: <Activity className="w-3.5 h-3.5" /> },
     { id: 'fabric', label: 'Fabric', icon: <Palette className="w-3.5 h-3.5" /> },
     { id: 'artwork', label: 'Artwork', icon: <ImageIcon className="w-3.5 h-3.5" /> },
-    { id: 'pattern', label: 'Pattern (2D)', icon: <Grid className="w-3.5 h-3.5" /> },
     { id: 'fitting', label: 'Fitting', icon: <User className="w-3.5 h-3.5" /> },
     { id: 'render', label: 'Render', icon: <Camera className="w-3.5 h-3.5" /> }
   ];

@@ -141,6 +141,9 @@ importers:
       '@fashion-studio/material-engine':
         specifier: workspace:*
         version: link:../material-engine
+      '@fashion-studio/pattern-engine':
+        specifier: workspace:*
+        version: link:../pattern-engine
       three:
         specifier: ^0.174.0
         version: 0.174.0
@@ -180,6 +183,12 @@ importers:
       '@fashion-studio/material-engine':
         specifier: workspace:*
         version: link:../material-engine
+      '@fashion-studio/pattern-engine':
+        specifier: workspace:*
+        version: link:../pattern-engine
+      '@fashion-studio/simulation-adapter':
+        specifier: workspace:*
+        version: link:../simulation-adapter
       three:
         specifier: ^0.174.0
         version: 0.174.0

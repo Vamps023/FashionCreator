@@ -9,6 +9,8 @@
     "@fashion-studio/garment-engine": "workspace:*",
     "@fashion-studio/garment-schema": "workspace:*",
     "@fashion-studio/material-engine": "workspace:*",
+    "@fashion-studio/pattern-engine": "workspace:*",
+    "@fashion-studio/simulation-adapter": "workspace:*",
     "three": "^0.174.0"
   }
 }

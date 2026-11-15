@@ -9,17 +9,19 @@ export const GarmentTypeSchema = z.enum([
   'shirt',
   'jacket',
   'trousers',
-  'dress'
+  'dress',
+  'tunic'
 ]);
 
 export const EditorModeSchema = z.enum([
   'design',
-  'fabric',
-  'artwork',
   'pattern',
+  'sewing',
+  'simulation',
+  'fabric',
   'fitting',
-  'render',
-  'simulation'
+  'artwork',
+  'render'
 ]);
 
 export const FitProfileSchema = z.enum(['slim', 'regular', 'relaxed', 'oversized']);
@@ -34,20 +36,93 @@ export const SurfacePrintZoneSchema = z.enum([
   'hood-print'
 ]);
 
+export const PatternSegmentSchema = z.object({
+  stableId: IdSchema,
+  startIndex: z.number().int().min(0),
+  endIndex: z.number().int().min(0),
+  geometryType: z.enum(['line', 'cubic-bezier', 'arc']).default('line'),
+  curveControlPoints: z.array(z.tuple([z.number(), z.number()])).optional(),
+  lengthMm: z.number().min(0),
+  name: z.string().optional()
+});
+
+export const PatternPieceSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1),
+  category: z.enum(['front', 'back', 'sleeve', 'hood', 'pocket', 'collar', 'cuff', 'waistband', 'custom']).default('custom'),
+  outlinePoints: z.array(z.tuple([z.number(), z.number()])).min(3),
+  segments: z.array(PatternSegmentSchema).default([]),
+  internalLines: z.array(z.object({
+    id: IdSchema,
+    points: z.array(z.tuple([z.number(), z.number()]))
+  })).default([]),
+  grainlineAngle: z.number().default(90),
+  seamAllowanceMm: z.number().default(10),
+  materialId: z.string().default('default'),
+  quantity: z.number().int().min(1).default(1),
+  mirrored: z.boolean().default(false),
+  transform2D: z.object({
+    x: z.number().default(0),
+    y: z.number().default(0),
+    rotation: z.number().default(0)
+  }).default({ x: 0, y: 0, rotation: 0 }),
+  transform3D: z.object({
+    position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+    rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0])
+  }).default({ position: [0, 0, 0], rotation: [0, 0, 0] }),
+  meshDensityMm: z.number().min(5).max(100).default(20)
+});
+
+export const SewingConnectionSchema = z.object({
+  id: IdSchema,
+  name: z.string().optional(),
+  sourcePieceId: IdSchema,
+  sourceEdgeIndex: z.number().int().min(0),
+  targetPieceId: IdSchema,
+  targetEdgeIndex: z.number().int().min(0),
+  orientation: z.enum(['normal', 'reversed']).default('normal'),
+  sewingMode: z.enum(['1-to-1', 'pleat', 'gather']).default('1-to-1'),
+  active: z.boolean().default(true)
+});
+
+export const PhysicalFabricPropertiesSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1),
+  arealDensityGsm: z.number().min(30).max(1000).default(200),
+  warpStiffness: z.number().min(0).max(1).default(0.8),
+  weftStiffness: z.number().min(0).max(1).default(0.7),
+  shearStiffness: z.number().min(0).max(1).default(0.5),
+  bendingStiffness: z.number().min(0).max(1).default(0.5),
+  damping: z.number().min(0.5).max(1).default(0.985),
+  friction: z.number().min(0).max(1).default(0.4),
+  thicknessMm: z.number().min(0.1).max(20).default(1.5)
+});
+
+export const SimulationSettingsSchema = z.object({
+  gravity: z.number().default(9.81),
+  substeps: z.number().int().min(1).max(50).default(12),
+  damping: z.number().min(0.8).max(0.999).default(0.985),
+  sewingForce: z.number().min(0.1).max(5).default(0.85),
+  collisionThicknessMm: z.number().min(1).max(50).default(12),
+  groundCollision: z.boolean().default(true),
+  avatarCollision: z.boolean().default(true),
+  isRunning: z.boolean().default(false)
+});
+
 export const GarmentParametersSchema = z.object({
-  bodyLength: z.number().min(500).max(950).default(720), // mm
-  chestWidth: z.number().min(400).max(800).default(620), // mm
-  sleeveLength: z.number().min(200).max(850).default(650), // mm
-  shoulderWidth: z.number().min(350).max(700).default(540), // mm
+  bodyLength: z.number().min(400).max(1200).default(720),
+  chestWidth: z.number().min(300).max(1000).default(620),
+  sleeveLength: z.number().min(0).max(950).default(650),
+  shoulderWidth: z.number().min(200).max(800).default(540),
   fit: FitProfileSchema.default('relaxed')
 });
 
 export const GarmentComponentOptionsSchema = z.object({
-  hood: z.enum(['double-layer', 'single-layer', 'cowl', 'none']).default('double-layer'),
-  pockets: z.enum(['kangaroo', 'hidden-side', 'none']).default('kangaroo'),
-  cuffs: z.enum(['ribbed', 'elastic', 'hemmed']).default('ribbed'),
-  waistband: z.enum(['ribbed', 'drawstring', 'hemmed']).default('ribbed'),
-  drawstrings: z.enum(['round-cord', 'flat-lace', 'none']).default('round-cord')
+  hood: z.enum(['double-layer', 'single-layer', 'cowl', 'none']).default('none'),
+  pockets: z.enum(['kangaroo', 'hidden-side', 'none']).default('none'),
+  cuffs: z.enum(['ribbed', 'elastic', 'hemmed']).default('hemmed'),
+  waistband: z.enum(['ribbed', 'drawstring', 'hemmed']).default('hemmed'),
+  drawstrings: z.enum(['round-cord', 'flat-lace', 'none']).default('none')
 });
 
 export const FabricMaterialSchema = z.object({
@@ -61,7 +136,7 @@ export const FabricMaterialSchema = z.object({
   sheenRoughness: z.number().min(0).max(1).default(0.6),
   normalScale: z.number().min(0).max(3).default(0.8),
   weaveRepeat: z.number().min(1).max(128).default(32),
-  texturePattern: z.enum(['plain', 'twill', 'ribbed', 'terry', 'knit']).default('knit')
+  texturePattern: z.enum(['plain', 'twill', 'ribbed', 'terry', 'knit']).default('plain')
 });
 
 export const ArtworkLayerSchema = z.object({
@@ -92,7 +167,20 @@ export const GarmentInstanceSchema = z.object({
   parameters: GarmentParametersSchema,
   components: GarmentComponentOptionsSchema,
   materials: z.record(z.string(), FabricMaterialSchema),
-  artworkLayers: z.array(ArtworkLayerSchema).default([])
+  physicalFabrics: z.record(z.string(), PhysicalFabricPropertiesSchema).default({}),
+  patternPieces: z.array(PatternPieceSchema).default([]),
+  seams: z.array(SewingConnectionSchema).default([]),
+  artworkLayers: z.array(ArtworkLayerSchema).default([]),
+  simulationSettings: SimulationSettingsSchema.default({
+    gravity: 9.81,
+    substeps: 12,
+    damping: 0.985,
+    sewingForce: 0.85,
+    collisionThicknessMm: 12,
+    groundCollision: true,
+    avatarCollision: true,
+    isRunning: false
+  })
 });
 
 export const AvatarConfigurationSchema = z.object({

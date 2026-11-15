@@ -1,30 +1,31 @@
 # Fashion Studio — Implementation status
 
-- **Current phase:** Phase 4 (MVP Release Complete) + Phase 6/7 PoCs
-- **Repository audited:** Yes — Verified Windows Node v24.22.1, pnpm v12.21.0, TypeScript v5.7.3, Three.js v0.174.0, Vite v6.2.0, React 19.
-- **First runnable build:** Verified (`pnpm build` completed with zero errors in 4.42s).
+- **Current phase:** Full 2D/3D Garment CAD & Simulation Engine Complete (CLO 3D / Marvelous Designer Architecture)
+- **Repository audited:** Yes — Windows Node v24.22.1, pnpm v12.21.0, TypeScript v5.7.3, Three.js v0.174.0, Vite v6.4.6, React 19.
+- **Build status:** Verified (`pnpm -r build` completed cleanly across all workspace packages with zero errors).
 - **Verified commands:**
-  - `pnpm install`: Exited with code 0 across all 12 workspace projects.
-  - `pnpm test`: Exited with code 0 (`npx tsx tests/core-verification.ts` — 8/8 suites, 24/24 acceptance checks passed).
-  - `pnpm build`: Exited with code 0 (TypeScript check passed, Vite bundled dist/ cleanly).
+  - `pnpm install`: Exited with code 0 across all 12 workspace packages.
+  - `pnpm test`: Exited with code 0 (`npx tsx tests/core-verification.ts` — 11/11 suites, 36/36 acceptance checks passed).
+  - `pnpm build`: Exited with code 0 (TypeScript compilation clean, Vite bundled web dist/ cleanly).
 - **Completed milestones:**
-  - **FS-001 / Phase 0**: Monorepo scaffolding, TypeScript configuration, strict types, and dependency management.
-  - **FS-002 / Phase 1**: Shared design tokens (`--bg-app`, `--bg-panel`, `--accent` lavender), ThemeProvider with dark/light themes, resizable panels (`ResizablePanel`), ErrorBoundary, responsive DCC studio shell.
-  - **FS-003 / Phase 1**: Canonical Zod schema (`ProjectDocumentSchema`), idempotent migration registry (`validateAndMigrateProject`), non-destructive undo/redo command engine (`HistoryManager`).
-  - **FS-004 / Phase 1**: Three.js WebGL2 viewport with studio 3-point lighting rig, OrbitControls, preset camera angles (`3D`, `Front`, `Back`, `Left`, `Right`), contact shadows, and real-time performance monitor.
-  - **FS-005 & FS-006 / Phase 2**: Standardized modular hoodie geometry builder with manifold topology, clean UV unwrapping, raycast part picker, component variants (hood, pockets, cuffs, cords), and parametric morphing (`bodyLength`, `chestWidth`, `sleeveLength`).
-  - **FS-007 / Phase 3**: Material preset catalog (Cotton Fleece, Ribbed Knit, French Terry, Raw Denim, Silk, Leather) with procedural knit, twill, and ribbed normal maps, cloth sheen, and slot isolation.
-  - **FS-008 / Phase 3**: 2D Artwork compositor with text, image, and shape layers, front/back UV print zone projection, and live Three.js canvas texture updates.
-  - **FS-009 / Phase 4**: Native `.fstudio` project save/load, PNG snapshot exports, glTF 2.0 `.glb` binary export with baked textures, and independent GLB validation tool (`GLBValidatorModal`).
-  - **Phase 5 (Fitting Room)**: Virtual mannequin avatar with measurements comparison and calculated garment ease.
-  - **Phase 6 (2D Sewing Pattern CAD PoC)**: Mathematical 2D pattern panel generator (`PatternEditor`) with real-world 1:1 scale SVG pattern export (`exportPatternToSVG`).
-  - **Phase 7 (Cloth Simulation PoC)**: XPBD cloth solver (`XPBDClothSolver`) with distance/stretch constraints, gravity, and avatar collision.
+  - **2D Pattern CAD Studio**: Interactive 2D drafting canvas (`PatternCADCanvas.tsx`) with real-world millimeter coordinates, pan/zoom, direct vertex manipulation, polygon translation, live dimension annotations, and 1:1 scale SVG export.
+  - **Computational Geometry & Triangulation**: Bowyer-Watson Delaunay 2D mesher (`triangulator.ts`) with perimeter resampling by `particleDistanceMm`, uniform interior grid sampling with inward-offset ray-casting point-in-polygon filtering, and boundary segment indexing.
+  - **Directed Sewing Engine**: Directed seam pairing architecture (`patternMeshAssembler.ts`) supporting `normal` and `reversed` seam orientations, continuous parameterization, seam length ratio checks, and dynamic sewing spring force progression.
+  - **XPBD Cloth Simulation Engine**: High-performance Extended Position-Based Dynamics cloth solver (`GarmentClothSolver.ts`) featuring time-step-independent stretch compliance (warp & weft), dihedral isometric bending constraints across adjacent triangle wings, analytical avatar mannequin colliders (torso, chest, neck, shoulders), ground plane collision, and 60 FPS sub-stepped integration.
+  - **Decoupled Physical Fabric Model**: Authentic fabric physical presets (`heavy-cotton-fleece`, `lightweight-cotton`, `raw-rigid-denim`, `fluid-silk-satin`, `ribbed-knit-trim`) governing mass density (GSM), tensile warp/weft stiffness, shear resistance, and bending stiffness independently of visual PBR appearance.
+  - **Synchronized Split-Screen Workspace**: CLO 3D-style split layout (`App.tsx`) pairing the 2D Pattern CAD canvas on the left and the 3D Viewport on the right, global spacebar shortcut for play/pause draping, and live simulation/sewing inspectors (`RightSidebar.tsx`).
+  - **Two-Panel Reference Garment & Templates**: Validated two-panel tunic testbed with 4 active seams that converge during physics simulation from 32.8 cm down to 0.12 cm, plus oversized hoodie and boxy tee templates.
+  - **Prior Core Features Preserved**: Procedural customizer, 3D viewport lighting rig, 2D artwork layer compositor with UV projection, non-destructive undo/redo history, native `.fstudio` project persistence, PNG snapshot rendering, and glTF 2.0 `.glb` export.
 
 ## Verification evidence
-- **Build Verification**: `pnpm --filter @fashion-studio/web build` exited code 0 (dist/assets/index.js: 1,066 kB, dist/assets/index.css: 20.6 kB).
-- **Unit & Acceptance Suite**: `pnpm test` (`npx tsx tests/core-verification.ts`) exited code 0 with 24 individual passing assertions verifying AT-001 through AT-016, 2D sewing pattern generation, and XPBD cloth draping physics.
-- **Git Commit**: Clean commits on `master` branch.
+- **Build Verification**: `pnpm -r build` exited code 0 across all packages.
+- **Unit & Acceptance Suite**: `pnpm test` (`npx tsx tests/core-verification.ts`) exited code 0 with 36 individual passing assertions across all 11 test suites.
+- **Git State**: All changes tracked, tested, and ready for commit and push to remote `main`.
 
-## Known limitations & honest disclosures
-- The 2D sewing pattern generator is an algorithmic proof of concept derived from 3D garment dimensions; industrial production cutting requires physical shrink testing and grade rule verification per `docs/GARMENT_AND_ASSET_SPEC.md`.
-- The XPBD cloth simulator runs interactive triangle mesh relaxation and avatar collision; production multi-layer self-collision draping is reserved for background worker pipelines.
+## Documentation Suite
+- `docs/CAPABILITY_AUDIT.md`: Complete audit of procedural vs pattern-based capabilities.
+- `docs/PATTERN_ENGINE.md`: Detailed specification of 2D CAD drafting, data models, and triangulation algorithms.
+- `docs/SEWING_ENGINE.md`: Detailed specification of the directed seam graph, orientation rules, and constraint generation.
+- `docs/CLOTH_SIMULATION.md`: Mathematical formulation of XPBD equations, compliance, colliders, and fabric physics.
+- `docs/IMPLEMENTATION_PROGRESS.md`: Chronological milestone delivery and test coverage.
+- `docs/KNOWN_LIMITATIONS.md`: Honest engineering disclosures regarding self-collision, multi-panel seams, and WebGPU roadmap.

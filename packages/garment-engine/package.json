@@ -1,0 +1,12 @@
+{
+  "name": "@fashion-studio/garment-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@fashion-studio/garment-schema": "workspace:*",
+    "@fashion-studio/material-engine": "workspace:*",
+    "three": "^0.174.0"
+  }
+}

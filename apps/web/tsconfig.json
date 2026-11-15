@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": false,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@fashion-studio/garment-schema": ["../../packages/garment-schema/src"],
+      "@fashion-studio/editor-core": ["../../packages/editor-core/src"],
+      "@fashion-studio/material-engine": ["../../packages/material-engine/src"],
+      "@fashion-studio/artwork-engine": ["../../packages/artwork-engine/src"],
+      "@fashion-studio/garment-engine": ["../../packages/garment-engine/src"],
+      "@fashion-studio/renderer-3d": ["../../packages/renderer-3d/src"],
+      "@fashion-studio/export-engine": ["../../packages/export-engine/src"]
+    }
+  },
+  "include": [
+    "src",
+    "../../packages/*/src"
+  ]
+}

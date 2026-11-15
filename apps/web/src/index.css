@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: #2b2c37;
+  }
+  
+  /* Custom thin scrollbars for DCC panels */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #141519;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #353745;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4c4e61;
+  }
+}
+
+/* Range input styling for sleek sliders */
+input[type=range] {
+  -webkit-appearance: none;
+  background: #2b2c37;
+  border-radius: 4px;
+  height: 6px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+  transition: transform 0.1s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}

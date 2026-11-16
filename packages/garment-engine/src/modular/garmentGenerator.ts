@@ -108,7 +108,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, 0.165], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] },
       meshDensityMm: 22
     },
     {
@@ -124,7 +124,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 660, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, -0.165], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
     },
     {
@@ -141,7 +141,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 50, y: 800, rotation: 0 },
       transform3D: {
-        position: [-0.31, 0.22, 0],
+        position: [-0.34, 0.22, 0],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.075,
         arrangementPoint: 'arm_left_upper'
@@ -162,7 +162,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 450, y: 800, rotation: 0 },
       transform3D: {
-        position: [0.31, 0.22, 0],
+        position: [0.34, 0.22, 0],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.075,
         arrangementPoint: 'arm_right_upper'
@@ -356,7 +356,7 @@ export function generateDressGarment(opts: GarmentCustomizationOptions = {}): Ga
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.18, 0.16], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.18, 0.19], rotation: [0, 0, 0] },
       meshDensityMm: 22
     },
     {
@@ -372,7 +372,7 @@ export function generateDressGarment(opts: GarmentCustomizationOptions = {}): Ga
       quantity: 1,
       mirrored: false,
       transform2D: { x: 550, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.18, -0.16], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.18, -0.19], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
     },
     {
@@ -389,7 +389,7 @@ export function generateDressGarment(opts: GarmentCustomizationOptions = {}): Ga
       mirrored: false,
       transform2D: { x: 50, y: 480, rotation: 0 },
       transform3D: {
-        position: [0, -0.28, 0.175],
+        position: [0, -0.28, 0.20],
         rotation: [0, 0, 0],
         curvatureRadius: 0.26,
         arrangementPoint: 'skirt_front'
@@ -410,7 +410,7 @@ export function generateDressGarment(opts: GarmentCustomizationOptions = {}): Ga
       mirrored: false,
       transform2D: { x: 800, y: 480, rotation: 0 },
       transform3D: {
-        position: [0, -0.28, -0.175],
+        position: [0, -0.28, -0.20],
         rotation: [0, Math.PI, 0],
         curvatureRadius: 0.26,
         arrangementPoint: 'skirt_back'
@@ -854,7 +854,7 @@ export function generateCropTopGarment(opts: GarmentCustomizationOptions = {}): 
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.16, 0.165], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.16, 0.19], rotation: [0, 0, 0] },
       meshDensityMm: 22
     },
     {
@@ -870,7 +870,7 @@ export function generateCropTopGarment(opts: GarmentCustomizationOptions = {}): 
       quantity: 1,
       mirrored: false,
       transform2D: { x: 650, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.16, -0.165], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.16, -0.19], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
     }
   ];

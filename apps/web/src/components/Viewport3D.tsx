@@ -38,7 +38,11 @@ interface Viewport3DProps {
   onArrangementPointSelected?: (pointId: string) => void;
 }
 
-export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPerformanceUpdate, onArrangementPointSelected }, ref) => {
+export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({
+  onPerformanceUpdate,
+  onArrangementPointSelected,
+  onSimulationStateChange
+}, ref) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<ViewportController | null>(null);
   const [isSimRunning, setIsSimRunning] = useState(false);
@@ -104,6 +108,7 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
 
     controller.onSimulationStateChange = (running) => {
       setIsSimRunning(running);
+      onSimulationStateChange?.(running);
     };
 
     controller.onArrangementPointClicked = (pointId) => {
@@ -116,14 +121,6 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
 
     controller.onPerformanceStats = (stats) => {
       onPerformanceUpdate(stats);
-    };
-
-    controller.onSimulationStateChange = (running) => {
-      setIsSimRunning(running);
-    };
-
-    controller.onArrangementPointClicked = (pointId) => {
-      onArrangementPointSelected?.(pointId);
     };
 
     // Initial setup

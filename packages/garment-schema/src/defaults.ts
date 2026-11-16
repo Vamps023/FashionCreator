@@ -222,7 +222,7 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
     quantity: 1,
     mirrored: false,
     transform2D: { x: 50, y: 50, rotation: 0 },
-    transform3D: { position: [0, 0.05, 0.16], rotation: [0, 0, 0] }, // In front of avatar
+    transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] }, // In front of avatar with clear clearance
     meshDensityMm: 20
   };
 
@@ -239,7 +239,7 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
     quantity: 1,
     mirrored: false,
     transform2D: { x: 620, y: 50, rotation: 0 },
-    transform3D: { position: [0, 0.05, -0.16], rotation: [0, Math.PI, 0] }, // Behind avatar, facing front
+    transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] }, // Behind avatar with clear clearance
     meshDensityMm: 20
   };
 

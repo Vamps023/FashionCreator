@@ -41,6 +41,8 @@ export class ViewportController {
   public clothSolver: GarmentClothSolver | null = null;
   public isSimulationRunning: boolean = false;
   public displayMode: ViewportDisplayMode = 'pbr';
+  private currentGarmentId: string | null = null;
+  private currentPatternSignature: string | null = null;
 
   // Live 3D Cloth Tug Tool state
   private isGrabbingCloth: boolean = false;
@@ -386,6 +388,40 @@ export class ViewportController {
         this.garmentGraph = null;
       }
 
+      const patternSignature = garment.patternPieces
+        .map(
+          (p) =>
+            `${p.id}:${p.outlinePoints.length}:${p.transform3D.position.join(',')}:${p.transform3D.curvatureRadius || 0}`
+        )
+        .join('|') + '#' + (garment.seams || []).map((s) => `${s.id}:${s.active}`).join('|');
+
+      // If the mesh topology and piece layout have not changed, update material in place without resetting physics
+      if (
+        this.simulatedMesh &&
+        this.currentGarmentId === garment.id &&
+        this.currentPatternSignature === patternSignature
+      ) {
+        updatePhysicalFabricMaterial(
+          this.simulatedMesh.material as THREE.MeshPhysicalMaterial,
+          garment.materials.body_front,
+          artTextures['front-print'],
+          wireframe
+        );
+
+        if (this.clothSolver && garment.physicalFabrics?.default) {
+          const pf = garment.physicalFabrics.default;
+          this.clothSolver.fabric.warpStiffness = pf.warpStiffness;
+          this.clothSolver.fabric.weftStiffness = pf.weftStiffness;
+          this.clothSolver.fabric.bendingStiffness = pf.bendingStiffness;
+          this.clothSolver.fabric.arealDensityGsm = pf.arealDensityGsm;
+          this.clothSolver.fabric.damping = pf.damping;
+        }
+        return;
+      }
+
+      this.currentGarmentId = garment.id;
+      this.currentPatternSignature = patternSignature;
+
       // Assemble 3D mesh from patterns
       this.assembledData = assembleGarmentFromPatterns(garment.patternPieces, garment.seams || []);
 
@@ -435,9 +471,7 @@ export class ViewportController {
       }
 
       this.clothSolver.gravity = garment.simulationSettings.gravity || 9.81;
-      this.clothSolver.substeps = garment.simulationSettings.substeps || 12;
-
-      this.isSimulationRunning = garment.simulationSettings.isRunning || false;
+      this.clothSolver.substeps = garment.simulationSettings.substeps || 15;
     } else {
       // Fallback: Procedural Hoodie Graph
       if (this.simulatedGroup) {

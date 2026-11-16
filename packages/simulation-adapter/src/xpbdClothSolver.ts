@@ -30,7 +30,7 @@ export interface BendingConstraint {
   v1: number; // Shared edge end
   v2: number; // Wing vertex 1
   v3: number; // Wing vertex 2
-  restAngle: number;
+  restLength: number; // Rest distance between wing 1 and wing 2
 }
 
 export class GarmentClothSolver {
@@ -68,18 +68,18 @@ export class GarmentClothSolver {
 
   // Solver Parameters
   public fabric: SolverFabricConfig = {
-    warpStiffness: 0.85,
-    weftStiffness: 0.75,
+    warpStiffness: 0.88,
+    weftStiffness: 0.80,
     shearStiffness: 0.65,
-    bendingStiffness: 0.6,
+    bendingStiffness: 0.5,
     arealDensityGsm: 280,
-    damping: 0.985,
-    friction: 0.45,
-    collisionThickness: 0.012
+    damping: 0.992,
+    friction: 0.65,
+    collisionThickness: 0.008
   };
 
   public gravity: number = 9.81; // m/s^2
-  public substeps: number = 12;
+  public substeps: number = 15;
   public isRunning: boolean = false;
   private simulationTime: number = 0;
 
@@ -136,15 +136,20 @@ export class GarmentClothSolver {
       eIdx++;
     });
 
-    // Extract Bending Constraints from interior shared edges
+    // Extract Bending Constraints from interior shared edges with initial rest distance
     edgeToTriangles.forEach(({ tri1Wing, tri2Wing, v0, v1 }) => {
       if (tri1Wing !== undefined && tri2Wing !== undefined) {
+        const dx = this.positions[tri1Wing * 3] - this.positions[tri2Wing * 3];
+        const dy = this.positions[tri1Wing * 3 + 1] - this.positions[tri2Wing * 3 + 1];
+        const dz = this.positions[tri1Wing * 3 + 2] - this.positions[tri2Wing * 3 + 2];
+        const restLength = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.001;
+
         this.bendingConstraints.push({
           v0,
           v1,
           v2: tri1Wing,
           v3: tri2Wing,
-          restAngle: 0.0
+          restLength
         });
       }
     });
@@ -177,41 +182,71 @@ export class GarmentClothSolver {
 
   /**
    * Sets up default anatomical colliders for the mannequin avatar.
+   * Accurately matches the visual dress form mannequin dimensions.
    */
   public setupDefaultAvatarColliders(): void {
     this.avatarColliders = [
-      // 1. Torso Center Ellipsoid / Capsule
+      // 1. Horizontal Shoulders Beam (Essential shelf for all hanging garments)
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0, -0.25, 0),
-        centerB: new THREE.Vector3(0, 0.32, 0),
-        radius: 0.175
+        centerA: new THREE.Vector3(-0.24, 0.32, 0),
+        centerB: new THREE.Vector3(0.24, 0.32, 0),
+        radius: 0.088
       },
-      // 2. Chest Bulge
+      // 2. Upper Torso Core
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(0, -0.28, 0),
+        centerB: new THREE.Vector3(0, 0.26, 0),
+        radius: 0.155
+      },
+      // 3. Chest Bulge
       {
         type: 'sphere',
-        centerA: new THREE.Vector3(0, 0.22, 0.04),
-        radius: 0.165
+        centerA: new THREE.Vector3(0, 0.20, 0.035),
+        radius: 0.145
       },
-      // 3. Neck
-      {
-        type: 'sphere',
-        centerA: new THREE.Vector3(0, 0.44, 0),
-        radius: 0.08
-      },
-      // 4. Left Shoulder & Upper Arm
+      // 4. Neck / Collar
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(-0.20, 0.32, 0),
-        centerB: new THREE.Vector3(-0.45, 0.05, 0),
-        radius: 0.095
+        centerA: new THREE.Vector3(0, 0.32, -0.01),
+        centerB: new THREE.Vector3(0, 0.46, -0.01),
+        radius: 0.072
       },
-      // 5. Right Shoulder & Upper Arm
+      // 5. Left Shoulder & Upper Arm
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0.20, 0.32, 0),
-        centerB: new THREE.Vector3(0.45, 0.05, 0),
-        radius: 0.095
+        centerA: new THREE.Vector3(-0.22, 0.30, 0),
+        centerB: new THREE.Vector3(-0.48, 0.02, 0),
+        radius: 0.065
+      },
+      // 6. Right Shoulder & Upper Arm
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(0.22, 0.30, 0),
+        centerB: new THREE.Vector3(0.48, 0.02, 0),
+        radius: 0.065
+      },
+      // 7. Pelvis & Lower Torso
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(0, -0.26, 0),
+        centerB: new THREE.Vector3(0, -0.44, 0),
+        radius: 0.145
+      },
+      // 8. Left Leg / Thigh (for skirts, dresses & pants)
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(-0.11, -0.40, 0),
+        centerB: new THREE.Vector3(-0.11, -0.80, 0),
+        radius: 0.082
+      },
+      // 9. Right Leg / Thigh
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(0.11, -0.40, 0),
+        centerB: new THREE.Vector3(0.11, -0.80, 0),
+        radius: 0.082
       }
     ];
   }
@@ -349,7 +384,7 @@ export class GarmentClothSolver {
         }
       }
 
-      // 4. Solve Bending Constraints (Crease resistance)
+      // 4. Solve Bending Constraints (Crease resistance against initial rest distance)
       const bendCompliance = (1.0 - this.fabric.bendingStiffness) * 0.005;
       const alphaBend = bendCompliance / subDt2;
 
@@ -371,8 +406,9 @@ export class GarmentClothSolver {
         const dz = this.positions[uIdx + 2] - this.positions[vIdx + 2];
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.0001;
 
-        // Approximate isometric bend constraint
-        const lambda = (dist * 0.05) / (wSum + alphaBend);
+        // Compare against rest distance between wings
+        const diff = (dist - bc.restLength) / dist;
+        const lambda = (diff * dist) / (wSum + alphaBend);
         const corrX = dx * (lambda / dist);
         const corrY = dy * (lambda / dist);
         const corrZ = dz * (lambda / dist);
@@ -389,7 +425,7 @@ export class GarmentClothSolver {
         }
       }
 
-      // 5. Collisions (Avatar Body & Ground)
+      // 5. Collisions (Avatar Body & Ground) with Coulomb Friction
       const clearDist = this.fabric.collisionThickness;
 
       for (let i = 0; i < this.numParticles; i++) {
@@ -399,26 +435,17 @@ export class GarmentClothSolver {
         // Ground collision plane
         if (this.positions[idx + 1] < -0.84) {
           this.positions[idx + 1] = -0.84;
+          this.prevPositions[idx + 1] = -0.84;
         }
 
         // Avatar Colliders
         for (const col of this.avatarColliders) {
+          let cx = 0, cy = 0, cz = 0;
           if (col.type === 'sphere') {
-            const dx = this.positions[idx] - col.centerA.x;
-            const dy = this.positions[idx + 1] - col.centerA.y;
-            const dz = this.positions[idx + 2] - col.centerA.z;
-            const d2 = dx * dx + dy * dy + dz * dz;
-            const targetR = col.radius + clearDist;
-
-            if (d2 < targetR * targetR) {
-              const d = Math.sqrt(d2) || 0.001;
-              const push = (targetR - d) / d;
-              this.positions[idx] += dx * push;
-              this.positions[idx + 1] += dy * push;
-              this.positions[idx + 2] += dz * push;
-            }
+            cx = col.centerA.x;
+            cy = col.centerA.y;
+            cz = col.centerA.z;
           } else if (col.type === 'capsule' && col.centerB) {
-            // Closest point on line segment A-B
             const abX = col.centerB.x - col.centerA.x;
             const abY = col.centerB.y - col.centerA.y;
             const abZ = col.centerB.z - col.centerA.z;
@@ -429,23 +456,49 @@ export class GarmentClothSolver {
             const apZ = this.positions[idx + 2] - col.centerA.z;
 
             const t = Math.max(0, Math.min(1, (apX * abX + apY * abY + apZ * abZ) / abLen2));
-            const closestX = col.centerA.x + abX * t;
-            const closestY = col.centerA.y + abY * t;
-            const closestZ = col.centerA.z + abZ * t;
+            cx = col.centerA.x + abX * t;
+            cy = col.centerA.y + abY * t;
+            cz = col.centerA.z + abZ * t;
+          }
 
-            const dx = this.positions[idx] - closestX;
-            const dy = this.positions[idx + 1] - closestY;
-            const dz = this.positions[idx + 2] - closestZ;
-            const d2 = dx * dx + dy * dy + dz * dz;
-            const targetR = col.radius + clearDist;
+          const dx = this.positions[idx] - cx;
+          const dy = this.positions[idx + 1] - cy;
+          const dz = this.positions[idx + 2] - cz;
+          const d2 = dx * dx + dy * dy + dz * dz;
+          const targetR = col.radius + clearDist;
 
-            if (d2 < targetR * targetR) {
-              const d = Math.sqrt(d2) || 0.001;
-              const push = (targetR - d) / d;
-              this.positions[idx] += dx * push;
-              this.positions[idx + 1] += dy * push;
-              this.positions[idx + 2] += dz * push;
-            }
+          if (d2 < targetR * targetR) {
+            const d = Math.sqrt(d2) || 0.0001;
+            const nx = dx / d;
+            const ny = dy / d;
+            const nz = dz / d;
+            const penetration = targetR - d;
+
+            // 1. Project position outside collider
+            this.positions[idx] += nx * penetration;
+            this.positions[idx + 1] += ny * penetration;
+            this.positions[idx + 2] += nz * penetration;
+
+            // 2. Adjust velocity (prevPositions) to account for normal stop & static/kinetic friction
+            const vx = this.positions[idx] - this.prevPositions[idx];
+            const vy = this.positions[idx + 1] - this.prevPositions[idx + 1];
+            const vz = this.positions[idx + 2] - this.prevPositions[idx + 2];
+
+            const vDotN = vx * nx + vy * ny + vz * nz;
+            // Eliminate normal velocity penetrating inward
+            const vNormX = Math.min(0, vDotN) * nx;
+            const vNormY = Math.min(0, vDotN) * ny;
+            const vNormZ = Math.min(0, vDotN) * nz;
+
+            // Apply friction to tangential velocity
+            const frictionFactor = Math.min(1.0, Math.max(0.0, this.fabric.friction));
+            const vTangX = (vx - vDotN * nx) * (1.0 - frictionFactor);
+            const vTangY = (vy - vDotN * ny) * (1.0 - frictionFactor);
+            const vTangZ = (vz - vDotN * nz) * (1.0 - frictionFactor);
+
+            this.prevPositions[idx] = this.positions[idx] - (vTangX + vNormX);
+            this.prevPositions[idx + 1] = this.positions[idx + 1] - (vTangY + vNormY);
+            this.prevPositions[idx + 2] = this.positions[idx + 2] - (vTangZ + vNormZ);
           }
         }
       }

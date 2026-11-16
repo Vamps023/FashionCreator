@@ -88,3 +88,19 @@ FashionCreator has evolved from a 3D procedural clothing configurator into a ful
   - **Strain & Fit Heatmaps**: Real-time vertex color modes for engineering-grade analysis of internal fabric tension (stretch/compression) and avatar body clearance pressure.
   - **Arrangement Volumes & Cylindrical Wrapping**: 13 canonical avatar arrangement volumes and cylindrical bending deformation ($x = R\sin(x/R), z = R(1-\cos(x/R))$) preventing flat pattern geometry from clipping limbs prior to simulation.
   - **Advanced 2D CAD Operations**: Added split edge (add vertex on segment), delete vertex, and mirror/duplicate pattern piece.
+
+### Milestone 8: XPBD Cloth Physics Stability & Contact Friction Overhaul
+- **Deliverables:**
+  - `packages/simulation-adapter/src/xpbdClothSolver.ts`
+  - `packages/renderer-3d/src/ViewportController.ts`
+  - `packages/garment-schema/src/defaults.ts`
+  - `packages/garment-engine/src/modular/garmentGenerator.ts`
+  - `apps/web/src/components/Viewport3D.tsx`
+- **Status:** **COMPLETE**
+- **Details:**
+  - **Static & Kinetic Contact Friction**: Implemented full Coulomb friction ($\mu = 0.65$) and normal velocity damping on avatar collider contact, eliminating frictionless slipping where garments slid off the mannequin onto the floor.
+  - **Horizontal Shoulder Beam Collider**: Added horizontal capsule shoulder shelf ($Y = 0.32$, radius $0.088\text{ m}$) preventing top-of-body hemispherical repulsion from pushing shoulder seams outward.
+  - **Proper Bending Rest Distance**: Fixed isometric bending constraints to store initial wing-to-wing rest length $L_0$, resolving the catastrophic accordion collapse bug where triangles were pulled toward $0\text{ mm}$.
+  - **Zero Frame-0 Penetration**: Shifted initial 3D panel placement from $Z = \pm 0.16\text{ m}$ to $\pm 0.19\text{ m}$, eliminating 574 initial penetrating vertices on frame 0.
+  - **Full Body & Thigh Colliders**: Added pelvis and dual thigh capsule colliders supporting skirts, dresses, and trousers.
+  - **Simulation State Preservation**: `ViewportController.setGarment()` updates materials in-place when pattern topology is unchanged, preserving active simulation progress across user clicks and slider adjustments.

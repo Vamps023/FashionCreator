@@ -832,42 +832,42 @@ export function createDefaultTShirtInstance(): GarmentInstance {
   const baseFabric = FABRIC_PRESETS['heavy-cotton-cream'];
   const physicalTee = PHYSICAL_FABRIC_PRESETS['lightweight-cotton'];
 
-  const width = 580;
-  const length = 700;
-  const sleeveLen = 260;
-  const shoulderWidth = 140;
-  const armholeDepth = 220;
-  const sleeveWidth = 380;
+  const width = 500;
+  const length = 680;
+  const sleeveLen = 200;
+  const shoulderWidth = 120;
+  const armholeDepth = 190;
+  const sleeveWidth = 340;
 
   const frontPts: [number, number][] = [
-    [0, 0],
-    [width, 0],
-    [width, length - armholeDepth],
-    [width - 25, length],
-    [width - 25 - shoulderWidth, length],
-    [width / 2, length - 80],
-    [25 + shoulderWidth, length],
-    [25, length],
-    [0, length - armholeDepth]
+    [0, 0], // 0: Bottom Left
+    [width, 0], // 1: Bottom Right
+    [width, length - armholeDepth], // 2: Right Underarm
+    [width - 20, length - 15], // 3: Right Shoulder Outer (sloped)
+    [width - 20 - shoulderWidth, length], // 4: Right Neck
+    [width / 2, length - 65], // 5: Front Neck Scoop Center
+    [20 + shoulderWidth, length], // 6: Left Neck
+    [20, length - 15], // 7: Left Shoulder Outer (sloped)
+    [0, length - armholeDepth] // 8: Left Underarm
   ];
 
   const backPts: [number, number][] = [
-    [0, 0],
-    [width, 0],
-    [width, length - armholeDepth],
-    [width - 25, length],
-    [width - 25 - shoulderWidth, length],
-    [width / 2, length - 28],
-    [25 + shoulderWidth, length],
-    [25, length],
-    [0, length - armholeDepth]
+    [0, 0], // 0: Bottom Left
+    [width, 0], // 1: Bottom Right
+    [width, length - armholeDepth], // 2: Right Underarm
+    [width - 20, length - 15], // 3: Right Shoulder Outer
+    [width - 20 - shoulderWidth, length], // 4: Right Neck
+    [width / 2, length - 22], // 5: Back Neck Center
+    [20 + shoulderWidth, length], // 6: Left Neck
+    [20, length - 15], // 7: Left Shoulder Outer
+    [0, length - armholeDepth] // 8: Left Underarm
   ];
 
   const leftSleevePts: [number, number][] = [
     [0, 0],
     [sleeveWidth - 40, 0],
     [sleeveWidth, sleeveLen],
-    [sleeveWidth / 2, sleeveLen + 50],
+    [sleeveWidth / 2, sleeveLen + 55],
     [0, sleeveLen]
   ];
 
@@ -875,11 +875,32 @@ export function createDefaultTShirtInstance(): GarmentInstance {
     [0, 0],
     [sleeveWidth - 40, 0],
     [sleeveWidth, sleeveLen],
-    [sleeveWidth / 2, sleeveLen + 50],
+    [sleeveWidth / 2, sleeveLen + 55],
     [0, sleeveLen]
   ];
 
   const pieces: PatternPiece[] = [
+    {
+      id: 'piece-tee-sleeve-left',
+      name: 'Left Sleeve',
+      category: 'sleeve',
+      outlinePoints: leftSleevePts,
+      segments: createSegmentsFromPoints(leftSleevePts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-cotton-front',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 50, y: 160, rotation: 0 },
+      transform3D: {
+        position: [-0.22, 0.18, -0.01],
+        rotation: [0, -Math.PI / 2, 0],
+        curvatureRadius: 0.055,
+        arrangementPoint: 'arm_left_upper'
+      },
+      meshDensityMm: 20
+    },
     {
       id: 'piece-tee-front',
       name: 'Front Bodice',
@@ -892,9 +913,9 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       materialId: 'mat-cotton-front',
       quantity: 1,
       mirrored: false,
-      transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
-      meshDensityMm: 22
+      transform2D: { x: 440, y: 60, rotation: 0 },
+      transform3D: { position: [0, 0.10, 0.13], rotation: [0, 0, 0] },
+      meshDensityMm: 20
     },
     {
       id: 'piece-tee-back',
@@ -908,30 +929,9 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       materialId: 'mat-cotton-back',
       quantity: 1,
       mirrored: true,
-      transform2D: { x: 660, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
-      meshDensityMm: 22
-    },
-    {
-      id: 'piece-tee-sleeve-left',
-      name: 'Left Sleeve',
-      category: 'sleeve',
-      outlinePoints: leftSleevePts,
-      segments: createSegmentsFromPoints(leftSleevePts),
-      internalLines: [],
-      grainlineAngle: 90,
-      seamAllowanceMm: 10,
-      materialId: 'mat-cotton-front',
-      quantity: 1,
-      mirrored: false,
-      transform2D: { x: 50, y: 800, rotation: 0 },
-      transform3D: {
-        position: [-0.34, 0.28, 0],
-        rotation: [0, -Math.PI / 2, 0],
-        curvatureRadius: 0.08,
-        arrangementPoint: 'arm_left_upper'
-      },
-      meshDensityMm: 22
+      transform2D: { x: 990, y: 60, rotation: 0 },
+      transform3D: { position: [0, 0.10, -0.11], rotation: [0, Math.PI, 0] },
+      meshDensityMm: 20
     },
     {
       id: 'piece-tee-sleeve-right',
@@ -945,14 +945,14 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       materialId: 'mat-cotton-front',
       quantity: 1,
       mirrored: false,
-      transform2D: { x: 450, y: 800, rotation: 0 },
+      transform2D: { x: 1540, y: 160, rotation: 0 },
       transform3D: {
-        position: [0.34, 0.28, 0],
+        position: [0.22, 0.18, -0.01],
         rotation: [0, Math.PI / 2, 0],
-        curvatureRadius: 0.08,
+        curvatureRadius: 0.055,
         arrangementPoint: 'arm_right_upper'
       },
-      meshDensityMm: 22
+      meshDensityMm: 20
     }
   ];
 

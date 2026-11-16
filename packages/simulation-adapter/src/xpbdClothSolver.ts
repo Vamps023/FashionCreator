@@ -186,67 +186,67 @@ export class GarmentClothSolver {
    */
   public setupDefaultAvatarColliders(): void {
     this.avatarColliders = [
-      // 1. Horizontal Shoulders Beam (Essential shelf for all hanging garments)
+      // 1. Shoulders Beam (Accurate clavicle shelf matching mannequin.glb)
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(-0.24, 0.32, 0),
-        centerB: new THREE.Vector3(0.24, 0.32, 0),
-        radius: 0.088
+        centerA: new THREE.Vector3(-0.18, 0.30, -0.01),
+        centerB: new THREE.Vector3(0.18, 0.30, -0.01),
+        radius: 0.075
       },
-      // 2. Upper Torso Core
+      // 2. Torso Core (Ribcage & abdomen)
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0, -0.28, 0),
-        centerB: new THREE.Vector3(0, 0.26, 0),
-        radius: 0.155
+        centerA: new THREE.Vector3(0, -0.25, 0.03),
+        centerB: new THREE.Vector3(0, 0.25, 0.02),
+        radius: 0.142
       },
-      // 3. Chest Bulge
+      // 3. Chest Bulge (Natural pectoral shelf)
       {
         type: 'sphere',
-        centerA: new THREE.Vector3(0, 0.20, 0.035),
-        radius: 0.145
+        centerA: new THREE.Vector3(0, 0.18, 0.05),
+        radius: 0.130
       },
       // 4. Neck / Collar
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0, 0.32, -0.01),
-        centerB: new THREE.Vector3(0, 0.46, -0.01),
-        radius: 0.072
-      },
-      // 5. Left Shoulder & Upper Arm
-      {
-        type: 'capsule',
-        centerA: new THREE.Vector3(-0.22, 0.30, 0),
-        centerB: new THREE.Vector3(-0.48, 0.02, 0),
+        centerA: new THREE.Vector3(0, 0.30, 0.01),
+        centerB: new THREE.Vector3(0, 0.45, 0.02),
         radius: 0.065
       },
-      // 6. Right Shoulder & Upper Arm
+      // 5. Left Arm (Hangs naturally along torso matching mannequin.glb)
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0.22, 0.30, 0),
-        centerB: new THREE.Vector3(0.48, 0.02, 0),
-        radius: 0.065
+        centerA: new THREE.Vector3(-0.21, 0.26, -0.01),
+        centerB: new THREE.Vector3(-0.22, -0.08, -0.02),
+        radius: 0.052
+      },
+      // 6. Right Arm (Hangs naturally along torso matching mannequin.glb)
+      {
+        type: 'capsule',
+        centerA: new THREE.Vector3(0.21, 0.26, -0.01),
+        centerB: new THREE.Vector3(0.22, -0.08, -0.02),
+        radius: 0.052
       },
       // 7. Pelvis & Lower Torso
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0, -0.26, 0),
-        centerB: new THREE.Vector3(0, -0.44, 0),
-        radius: 0.145
+        centerA: new THREE.Vector3(0, -0.24, 0.03),
+        centerB: new THREE.Vector3(0, -0.42, 0.03),
+        radius: 0.140
       },
-      // 8. Left Leg / Thigh (for skirts, dresses & pants)
+      // 8. Left Leg / Thigh
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(-0.11, -0.40, 0),
-        centerB: new THREE.Vector3(-0.11, -0.80, 0),
-        radius: 0.082
+        centerA: new THREE.Vector3(-0.10, -0.38, 0.02),
+        centerB: new THREE.Vector3(-0.10, -0.80, 0.02),
+        radius: 0.075
       },
       // 9. Right Leg / Thigh
       {
         type: 'capsule',
-        centerA: new THREE.Vector3(0.11, -0.40, 0),
-        centerB: new THREE.Vector3(0.11, -0.80, 0),
-        radius: 0.082
+        centerA: new THREE.Vector3(0.10, -0.38, 0.02),
+        centerB: new THREE.Vector3(0.10, -0.80, 0.02),
+        radius: 0.075
       }
     ];
   }

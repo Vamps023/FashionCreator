@@ -45,9 +45,9 @@ assert(project.schemaVersion === 1, 'AT-001: Project schemaVersion is exactly 1'
 assert(project.garments.length >= 1, 'AT-001: Initial project has active garment instance');
 const activeGarment = project.garments.find((g) => g.id === project.activeGarmentId) || project.garments[0];
 assert(activeGarment.type === 'tshirt', 'AT-001: Default template is Classic Crewneck T-Shirt');
-assert(activeGarment.parameters.bodyLength === 700, 'AT-001: Default body length 700 mm');
-assert(activeGarment.parameters.chestWidth === 580, 'AT-001: Default chest width 580 mm');
-assert(activeGarment.parameters.sleeveLength === 260, 'AT-001: Default sleeve length 260 mm');
+assert(activeGarment.parameters.bodyLength === 680, 'AT-001: Default body length 680 mm');
+assert(activeGarment.parameters.chestWidth === 500, 'AT-001: Default chest width 500 mm');
+assert(activeGarment.parameters.sleeveLength === 200, 'AT-001: Default sleeve length 200 mm');
 assert(project.avatar.visible === true, 'AT-001: Virtual avatar mannequin enabled by default');
 
 // ---------------------------------------------------------
@@ -191,11 +191,12 @@ assert(svgOutput.includes('Front Bodice'), 'Phase 6: Includes panel labels and c
 console.log('\n--- Test Suite 8: XPBD Cloth Simulation Adapter ---');
 const testGeom = new THREE.PlaneGeometry(0.6, 0.6, 10, 10);
 const solver = new XPBDClothSolver(testGeom, [0, 10]); // Anchor two top corners
+solver.avatarColliders = []; // Isolate gravity draping from mannequin body colliders
 const initialY = testGeom.attributes.position.getY(50); // Center particle
 
 // Step physics solver under gravity
 for (let s = 0; s < 10; s++) {
-  solver.step(0.016, [{ center: new THREE.Vector3(0, 0, 0), radius: 0.15 }]);
+  solver.step(0.016);
 }
 const simulatedY = testGeom.attributes.position.getY(50);
 assert(simulatedY < initialY, 'Phase 7: XPBD solver correctly drapes cloth vertices downward under gravity');

@@ -40,39 +40,39 @@ export interface GarmentCustomizationOptions {
  * 1. REAL CREWNECK T-SHIRT (Bodices + Left/Right Sleeves)
  */
 export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): GarmentInstance {
-  const width = opts.chestWidthMm || 560;
-  const length = opts.bodyLengthMm || 700;
-  const sleeveLen = opts.sleeveLengthMm || 220;
-  const shoulderWidth = 135;
-  const armholeDepth = 210;
-  const sleeveWidth = 360;
+  const width = opts.chestWidthMm || 500;
+  const length = opts.bodyLengthMm || 680;
+  const sleeveLen = opts.sleeveLengthMm || 200;
+  const shoulderWidth = 120;
+  const armholeDepth = 190;
+  const sleeveWidth = 340;
 
   const baseFabric = FABRIC_PRESETS['heavy-cotton-cream'];
   const physicalFabric = PHYSICAL_FABRIC_PRESETS['lightweight-cotton'];
 
-  // Front Bodice
+  // Front Bodice (Ergonomic slope and clean crewneck scoop)
   const frontPts: [number, number][] = [
     [0, 0], // 0: Bottom Left
     [width, 0], // 1: Bottom Right
     [width, length - armholeDepth], // 2: Right Underarm
-    [width - 25, length], // 3: Right Shoulder Outer
-    [width - 25 - shoulderWidth, length], // 4: Right Neck
-    [width / 2, length - 80], // 5: Front Neck Scoop Center
-    [25 + shoulderWidth, length], // 6: Left Neck
-    [25, length], // 7: Left Shoulder Outer
+    [width - 20, length - 15], // 3: Right Shoulder Outer (natural 15mm slope)
+    [width - 20 - shoulderWidth, length], // 4: Right Neck
+    [width / 2, length - 65], // 5: Front Neck Scoop Center
+    [20 + shoulderWidth, length], // 6: Left Neck
+    [20, length - 15], // 7: Left Shoulder Outer (natural 15mm slope)
     [0, length - armholeDepth] // 8: Left Underarm
   ];
 
-  // Back Bodice
+  // Back Bodice (Ergonomic high collar curve)
   const backPts: [number, number][] = [
     [0, 0], // 0: Bottom Left
     [width, 0], // 1: Bottom Right
     [width, length - armholeDepth], // 2: Right Underarm
-    [width - 25, length], // 3: Right Shoulder Outer
-    [width - 25 - shoulderWidth, length], // 4: Right Neck
-    [width / 2, length - 28], // 5: Back Neck Center
-    [25 + shoulderWidth, length], // 6: Left Neck
-    [25, length], // 7: Left Shoulder Outer
+    [width - 20, length - 15], // 3: Right Shoulder Outer
+    [width - 20 - shoulderWidth, length], // 4: Right Neck
+    [width / 2, length - 22], // 5: Back Neck Center
+    [20 + shoulderWidth, length], // 6: Left Neck
+    [20, length - 15], // 7: Left Shoulder Outer
     [0, length - armholeDepth] // 8: Left Underarm
   ];
 
@@ -80,21 +80,42 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
   const leftSleevePts: [number, number][] = [
     [0, 0], // Cuff bottom left
     [sleeveWidth - 40, 0], // Cuff bottom right
-    [sleeveWidth, sleeveLen], // Bicep outer
-    [sleeveWidth / 2, sleeveLen + 50], // Cap crown
-    [0, sleeveLen] // Bicep inner
+    [sleeveWidth, sleeveLen], // Bicep outer (back)
+    [sleeveWidth / 2, sleeveLen + 55], // Cap crown
+    [0, sleeveLen] // Bicep inner (front)
   ];
 
   // Right Sleeve
   const rightSleevePts: [number, number][] = [
     [0, 0],
     [sleeveWidth - 40, 0],
-    [sleeveWidth, sleeveLen],
-    [sleeveWidth / 2, sleeveLen + 50],
-    [0, sleeveLen]
+    [sleeveWidth, sleeveLen], // Bicep inner (front)
+    [sleeveWidth / 2, sleeveLen + 55], // Cap crown
+    [0, sleeveLen] // Bicep outer (back)
   ];
 
   const pieces: PatternPiece[] = [
+    {
+      id: 'piece-tee-sleeve-left',
+      name: 'Left Sleeve',
+      category: 'sleeve',
+      outlinePoints: leftSleevePts,
+      segments: createSegments(leftSleevePts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-tee-body',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 50, y: 160, rotation: 0 },
+      transform3D: {
+        position: [-0.22, 0.18, -0.01],
+        rotation: [0, -Math.PI / 2, 0],
+        curvatureRadius: 0.055,
+        arrangementPoint: 'arm_left_upper'
+      },
+      meshDensityMm: 20
+    },
     {
       id: 'piece-tee-front',
       name: 'Front Bodice',
@@ -107,9 +128,9 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       materialId: 'mat-tee-body',
       quantity: 1,
       mirrored: false,
-      transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
-      meshDensityMm: 22
+      transform2D: { x: 440, y: 60, rotation: 0 },
+      transform3D: { position: [0, 0.10, 0.13], rotation: [0, 0, 0] },
+      meshDensityMm: 20
     },
     {
       id: 'piece-tee-back',
@@ -123,30 +144,9 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       materialId: 'mat-tee-body',
       quantity: 1,
       mirrored: true,
-      transform2D: { x: 660, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
-      meshDensityMm: 22
-    },
-    {
-      id: 'piece-tee-sleeve-left',
-      name: 'Left Sleeve',
-      category: 'sleeve',
-      outlinePoints: leftSleevePts,
-      segments: createSegments(leftSleevePts),
-      internalLines: [],
-      grainlineAngle: 90,
-      seamAllowanceMm: 10,
-      materialId: 'mat-tee-body',
-      quantity: 1,
-      mirrored: false,
-      transform2D: { x: 50, y: 800, rotation: 0 },
-      transform3D: {
-        position: [-0.34, 0.28, 0],
-        rotation: [0, -Math.PI / 2, 0],
-        curvatureRadius: 0.08,
-        arrangementPoint: 'arm_left_upper'
-      },
-      meshDensityMm: 22
+      transform2D: { x: 990, y: 60, rotation: 0 },
+      transform3D: { position: [0, 0.10, -0.11], rotation: [0, Math.PI, 0] },
+      meshDensityMm: 20
     },
     {
       id: 'piece-tee-sleeve-right',
@@ -160,14 +160,14 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       materialId: 'mat-tee-body',
       quantity: 1,
       mirrored: false,
-      transform2D: { x: 450, y: 800, rotation: 0 },
+      transform2D: { x: 1540, y: 160, rotation: 0 },
       transform3D: {
-        position: [0.34, 0.28, 0],
+        position: [0.22, 0.18, -0.01],
         rotation: [0, Math.PI / 2, 0],
-        curvatureRadius: 0.08,
+        curvatureRadius: 0.055,
         arrangementPoint: 'arm_right_upper'
       },
-      meshDensityMm: 22
+      meshDensityMm: 20
     }
   ];
 

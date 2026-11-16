@@ -267,9 +267,16 @@ export const PatternCADCanvas: React.FC = () => {
       // Draw curved sewing indicator line between corresponding seams
       ctx.beginPath();
       ctx.moveTo(midAX, midAY);
-      const cpX = (midAX + midBX) / 2;
-      const cpY = (midAY + midBY) / 2 - 25;
-      ctx.quadraticCurveTo(cpX, cpY, midBX, midBY);
+      if (pA.id === pB.id) {
+        // Inseam on same piece: arc cleanly outside the piece below the hem/cuff
+        const cpX = (midAX + midBX) / 2;
+        const cpY = Math.max(midAY, midBY) + 40 / zoom;
+        ctx.quadraticCurveTo(cpX, cpY, midBX, midBY);
+      } else {
+        const cpX = (midAX + midBX) / 2;
+        const cpY = (midAY + midBY) / 2 - 20 / zoom;
+        ctx.quadraticCurveTo(cpX, cpY, midBX, midBY);
+      }
 
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2 / zoom;

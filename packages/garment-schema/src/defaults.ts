@@ -222,7 +222,7 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
     quantity: 1,
     mirrored: false,
     transform2D: { x: 50, y: 50, rotation: 0 },
-    transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] }, // In front of avatar with clear clearance
+    transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] }, // In front of avatar with clear clearance over shoulders
     meshDensityMm: 20
   };
 
@@ -239,24 +239,24 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
     quantity: 1,
     mirrored: false,
     transform2D: { x: 620, y: 50, rotation: 0 },
-    transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] }, // Behind avatar with clear clearance
+    transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] }, // Behind avatar with clear clearance over shoulders
     meshDensityMm: 20
   };
 
   // Seam Connections:
-  // 1. Left Shoulder Seam (Front edge 7: [7]->[6] to Back edge 3: [3]->[4])
-  // 2. Right Shoulder Seam (Front edge 3: [3]->[4] to Back edge 7: [7]->[6])
-  // 3. Left Side Seam (Front edge 8: [8]->[0] to Back edge 1: [1]->[2])
-  // 4. Right Side Seam (Front edge 1: [1]->[2] to Back edge 8: [8]->[0])
+  // 1. Left Shoulder Seam (Front edge 6: [6]->[7] to Back edge 3: [3]->[4], reversed connects neck->neck, outer->outer)
+  // 2. Right Shoulder Seam (Front edge 3: [3]->[4] to Back edge 6: [6]->[7], reversed connects outer->outer, neck->neck)
+  // 3. Left Side Seam (Front edge 8: [8]->[0] to Back edge 1: [1]->[2], reversed connects top->top, bottom->bottom)
+  // 4. Right Side Seam (Front edge 1: [1]->[2] to Back edge 8: [8]->[0], reversed connects bottom->bottom, top->top)
   const seams: SewingConnection[] = [
     {
       id: 'seam-shoulder-left',
       name: 'Left Shoulder',
       sourcePieceId: 'piece-tunic-front',
-      sourceEdgeIndex: 7,
+      sourceEdgeIndex: 6,
       targetPieceId: 'piece-tunic-back',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -266,8 +266,8 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
       sourcePieceId: 'piece-tunic-front',
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-tunic-back',
-      targetEdgeIndex: 7,
-      orientation: 'normal',
+      targetEdgeIndex: 6,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -278,7 +278,7 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-tunic-back',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -289,7 +289,7 @@ export function createTwoPanelTunicInstance(): GarmentInstance {
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-tunic-back',
       targetEdgeIndex: 8,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     }
@@ -456,7 +456,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
       meshDensityMm: 24
     },
     {
@@ -472,7 +472,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       quantity: 1,
       mirrored: false,
       transform2D: { x: 720, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
       meshDensityMm: 24
     },
     {
@@ -489,7 +489,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 50, y: 820, rotation: 0 },
       transform3D: {
-        position: [-0.34, 0.22, 0],
+        position: [-0.30, 0.30, 0],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.08,
         arrangementPoint: 'arm_left_upper'
@@ -510,7 +510,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 500, y: 820, rotation: 0 },
       transform3D: {
-        position: [0.34, 0.22, 0],
+        position: [0.30, 0.30, 0],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.08,
         arrangementPoint: 'arm_right_upper'
@@ -531,7 +531,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 950, y: 820, rotation: 0 },
       transform3D: {
-        position: [-0.11, 0.50, -0.03],
+        position: [-0.11, 0.52, -0.03],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.14,
         arrangementPoint: 'hood_left'
@@ -552,7 +552,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 1300, y: 820, rotation: 0 },
       transform3D: {
-        position: [0.11, 0.50, -0.03],
+        position: [0.11, 0.52, -0.03],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.14,
         arrangementPoint: 'hood_right'
@@ -573,7 +573,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 1400, y: 50, rotation: 0 },
       transform3D: {
-        position: [0, -0.16, 0.205],
+        position: [0, -0.07, 0.20],
         rotation: [0, 0, 0]
       },
       meshDensityMm: 24
@@ -589,7 +589,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 6,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -600,7 +600,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 6,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -612,7 +612,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -623,11 +623,11 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 8,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
-    // 3. Sleeve Inseams (tubular close)
+    // 3. Sleeve Inseams
     {
       id: 'seam-hoodie-sleeve-left-in',
       name: 'Left Sleeve Inseam',
@@ -635,7 +635,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-sleeve-left',
       targetEdgeIndex: 4,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -646,7 +646,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-sleeve-right',
       targetEdgeIndex: 4,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -655,9 +655,20 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       id: 'seam-hoodie-armhole-left-front',
       name: 'Left Armhole Front',
       sourcePieceId: 'piece-hoodie-sleeve-left',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-hoodie-front',
       targetEdgeIndex: 7,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-hoodie-armhole-left-back',
+      name: 'Left Armhole Back',
+      sourcePieceId: 'piece-hoodie-sleeve-left',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-hoodie-back',
+      targetEdgeIndex: 2,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
@@ -666,9 +677,20 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       id: 'seam-hoodie-armhole-right-front',
       name: 'Right Armhole Front',
       sourcePieceId: 'piece-hoodie-sleeve-right',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-front',
       targetEdgeIndex: 2,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-hoodie-armhole-right-back',
+      name: 'Right Armhole Back',
+      sourcePieceId: 'piece-hoodie-sleeve-right',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-hoodie-back',
+      targetEdgeIndex: 7,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
@@ -681,7 +703,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -692,7 +714,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 2,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 2,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -703,7 +725,7 @@ export function createDefaultHoodieInstance(): GarmentInstance {
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -804,34 +826,290 @@ export function createDefaultHoodieInstance(): GarmentInstance {
 }
 
 // -------------------------------------------------------------
-// REFERENCE GARMENT 3: BOXY T-SHIRT
+// REFERENCE GARMENT 3: BOXY T-SHIRT (4-PANEL MODEL)
 // -------------------------------------------------------------
 export function createDefaultTShirtInstance(): GarmentInstance {
-  const tunic = createTwoPanelTunicInstance();
   const baseFabric = FABRIC_PRESETS['heavy-cotton-cream'];
   const physicalTee = PHYSICAL_FABRIC_PRESETS['lightweight-cotton'];
 
+  const width = 580;
+  const length = 700;
+  const sleeveLen = 260;
+  const shoulderWidth = 140;
+  const armholeDepth = 220;
+  const sleeveWidth = 380;
+
+  const frontPts: [number, number][] = [
+    [0, 0],
+    [width, 0],
+    [width, length - armholeDepth],
+    [width - 25, length],
+    [width - 25 - shoulderWidth, length],
+    [width / 2, length - 80],
+    [25 + shoulderWidth, length],
+    [25, length],
+    [0, length - armholeDepth]
+  ];
+
+  const backPts: [number, number][] = [
+    [0, 0],
+    [width, 0],
+    [width, length - armholeDepth],
+    [width - 25, length],
+    [width - 25 - shoulderWidth, length],
+    [width / 2, length - 28],
+    [25 + shoulderWidth, length],
+    [25, length],
+    [0, length - armholeDepth]
+  ];
+
+  const leftSleevePts: [number, number][] = [
+    [0, 0],
+    [sleeveWidth - 40, 0],
+    [sleeveWidth, sleeveLen],
+    [sleeveWidth / 2, sleeveLen + 50],
+    [0, sleeveLen]
+  ];
+
+  const rightSleevePts: [number, number][] = [
+    [0, 0],
+    [sleeveWidth - 40, 0],
+    [sleeveWidth, sleeveLen],
+    [sleeveWidth / 2, sleeveLen + 50],
+    [0, sleeveLen]
+  ];
+
+  const pieces: PatternPiece[] = [
+    {
+      id: 'piece-tee-front',
+      name: 'Front Bodice',
+      category: 'front',
+      outlinePoints: frontPts,
+      segments: createSegmentsFromPoints(frontPts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-cotton-front',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 50, y: 50, rotation: 0 },
+      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
+      meshDensityMm: 22
+    },
+    {
+      id: 'piece-tee-back',
+      name: 'Back Bodice',
+      category: 'back',
+      outlinePoints: backPts,
+      segments: createSegmentsFromPoints(backPts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-cotton-back',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 660, y: 50, rotation: 0 },
+      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
+      meshDensityMm: 22
+    },
+    {
+      id: 'piece-tee-sleeve-left',
+      name: 'Left Sleeve',
+      category: 'sleeve',
+      outlinePoints: leftSleevePts,
+      segments: createSegmentsFromPoints(leftSleevePts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-cotton-front',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 50, y: 800, rotation: 0 },
+      transform3D: {
+        position: [-0.30, 0.30, 0],
+        rotation: [0, -Math.PI / 2, 0],
+        curvatureRadius: 0.075,
+        arrangementPoint: 'arm_left_upper'
+      },
+      meshDensityMm: 22
+    },
+    {
+      id: 'piece-tee-sleeve-right',
+      name: 'Right Sleeve',
+      category: 'sleeve',
+      outlinePoints: rightSleevePts,
+      segments: createSegmentsFromPoints(rightSleevePts),
+      internalLines: [],
+      grainlineAngle: 90,
+      seamAllowanceMm: 10,
+      materialId: 'mat-cotton-front',
+      quantity: 1,
+      mirrored: false,
+      transform2D: { x: 450, y: 800, rotation: 0 },
+      transform3D: {
+        position: [0.30, 0.30, 0],
+        rotation: [0, Math.PI / 2, 0],
+        curvatureRadius: 0.075,
+        arrangementPoint: 'arm_right_upper'
+      },
+      meshDensityMm: 22
+    }
+  ];
+
+  const seams: SewingConnection[] = [
+    // 1. Shoulders
+    {
+      id: 'seam-tee-shoulder-left',
+      name: 'Left Shoulder',
+      sourcePieceId: 'piece-tee-front',
+      sourceEdgeIndex: 6,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 3,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-shoulder-right',
+      name: 'Right Shoulder',
+      sourcePieceId: 'piece-tee-front',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 6,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    // 2. Side Seams
+    {
+      id: 'seam-tee-side-left',
+      name: 'Left Side Seam',
+      sourcePieceId: 'piece-tee-front',
+      sourceEdgeIndex: 8,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 1,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-side-right',
+      name: 'Right Side Seam',
+      sourcePieceId: 'piece-tee-front',
+      sourceEdgeIndex: 1,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 8,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    // 3. Sleeve Inseams
+    {
+      id: 'seam-tee-sleeve-left-in',
+      name: 'Left Sleeve Inseam',
+      sourcePieceId: 'piece-tee-sleeve-left',
+      sourceEdgeIndex: 1,
+      targetPieceId: 'piece-tee-sleeve-left',
+      targetEdgeIndex: 4,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-sleeve-right-in',
+      name: 'Right Sleeve Inseam',
+      sourcePieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 1,
+      targetPieceId: 'piece-tee-sleeve-right',
+      targetEdgeIndex: 4,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    // 4. Sleeve to Armhole Seams
+    {
+      id: 'seam-tee-armhole-left-front',
+      name: 'Left Armhole Front',
+      sourcePieceId: 'piece-tee-sleeve-left',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-tee-front',
+      targetEdgeIndex: 7,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-armhole-left-back',
+      name: 'Left Armhole Back',
+      sourcePieceId: 'piece-tee-sleeve-left',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 2,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-armhole-right-front',
+      name: 'Right Armhole Front',
+      sourcePieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-tee-front',
+      targetEdgeIndex: 2,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-armhole-right-back',
+      name: 'Right Armhole Back',
+      sourcePieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 7,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    }
+  ];
+
   return {
-    ...tunic,
     id: 'tshirt-001',
     templateId: 'tshirt-box-fit-v1',
     name: 'Boxy Heavyweight Tee',
     type: 'tshirt',
     parameters: {
-      bodyLength: 700,
-      chestWidth: 580,
-      sleeveLength: 260,
+      bodyLength: length,
+      chestWidth: width,
+      sleeveLength: sleeveLen,
       shoulderWidth: 520,
       fit: 'oversized'
+    },
+    components: {
+      hood: 'none',
+      pockets: 'none',
+      cuffs: 'hemmed',
+      waistband: 'hemmed',
+      drawstrings: 'none'
+    },
+    materials: {
+      body_front: { ...baseFabric },
+      body_back: { ...baseFabric },
+      sleeves: { ...baseFabric },
+      hood: { ...baseFabric },
+      pocket: { ...baseFabric },
+      cuffs: { ...baseFabric },
+      waistband: { ...baseFabric },
+      drawstrings: { ...baseFabric },
+      collar: { ...baseFabric }
     },
     physicalFabrics: {
       default: { ...physicalTee }
     },
-    materials: {
-      ...tunic.materials,
-      body_front: { ...baseFabric },
-      body_back: { ...baseFabric }
-    }
+    patternPieces: pieces,
+    seams,
+    artworkLayers: [],
+    simulationSettings: { ...DEFAULT_SIMULATION_SETTINGS }
   };
 }
 

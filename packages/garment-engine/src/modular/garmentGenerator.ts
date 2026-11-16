@@ -108,7 +108,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
       meshDensityMm: 22
     },
     {
@@ -124,7 +124,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 660, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
     },
     {
@@ -141,7 +141,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 50, y: 800, rotation: 0 },
       transform3D: {
-        position: [-0.34, 0.22, 0],
+        position: [-0.30, 0.30, 0],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.075,
         arrangementPoint: 'arm_left_upper'
@@ -162,7 +162,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 450, y: 800, rotation: 0 },
       transform3D: {
-        position: [0.34, 0.22, 0],
+        position: [0.30, 0.30, 0],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.075,
         arrangementPoint: 'arm_right_upper'
@@ -172,31 +172,30 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
   ];
 
   const seams: SewingConnection[] = [
-    // 1. Left Shoulder
+    // 1. Shoulders
     {
       id: 'seam-tee-shoulder-left',
       name: 'Left Shoulder',
       sourcePieceId: 'piece-tee-front',
-      sourceEdgeIndex: 7,
+      sourceEdgeIndex: 6,
       targetPieceId: 'piece-tee-back',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
-    // 2. Right Shoulder
     {
       id: 'seam-tee-shoulder-right',
       name: 'Right Shoulder',
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 7,
-      orientation: 'normal',
+      targetEdgeIndex: 6,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
-    // 3. Left Side Seam
+    // 2. Side Seams
     {
       id: 'seam-tee-side-left',
       name: 'Left Side Seam',
@@ -204,11 +203,10 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-tee-back',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
-    // 4. Right Side Seam
     {
       id: 'seam-tee-side-right',
       name: 'Right Side Seam',
@@ -216,30 +214,74 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-tee-back',
       targetEdgeIndex: 8,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
-    // 5. Left Sleeve Underarm Seam (Edge 0 to Edge 2 on left sleeve)
+    // 3. Sleeve Inseams
     {
-      id: 'seam-tee-sleeve-left-underarm',
+      id: 'seam-tee-sleeve-left-in',
       name: 'Left Sleeve Inseam',
       sourcePieceId: 'piece-tee-sleeve-left',
-      sourceEdgeIndex: 0,
+      sourceEdgeIndex: 1,
       targetPieceId: 'piece-tee-sleeve-left',
+      targetEdgeIndex: 4,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-sleeve-right-in',
+      name: 'Right Sleeve Inseam',
+      sourcePieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 1,
+      targetPieceId: 'piece-tee-sleeve-right',
+      targetEdgeIndex: 4,
+      orientation: 'reversed',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    // 4. Sleeve to Armhole Seams
+    {
+      id: 'seam-tee-armhole-left-front',
+      name: 'Left Armhole Front',
+      sourcePieceId: 'piece-tee-sleeve-left',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-tee-front',
+      targetEdgeIndex: 7,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-armhole-left-back',
+      name: 'Left Armhole Back',
+      sourcePieceId: 'piece-tee-sleeve-left',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-tee-back',
       targetEdgeIndex: 2,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
-    // 6. Right Sleeve Underarm Seam
     {
-      id: 'seam-tee-sleeve-right-underarm',
-      name: 'Right Sleeve Inseam',
+      id: 'seam-tee-armhole-right-front',
+      name: 'Right Armhole Front',
       sourcePieceId: 'piece-tee-sleeve-right',
-      sourceEdgeIndex: 0,
-      targetPieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-tee-front',
       targetEdgeIndex: 2,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-tee-armhole-right-back',
+      name: 'Right Armhole Back',
+      sourcePieceId: 'piece-tee-sleeve-right',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-tee-back',
+      targetEdgeIndex: 7,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
@@ -1066,7 +1108,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 50, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, 0.19], rotation: [0, 0, 0] },
+      transform3D: { position: [0, 0.14, 0.18], rotation: [0, 0, 0] },
       meshDensityMm: 24
     },
     {
@@ -1082,7 +1124,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       quantity: 1,
       mirrored: false,
       transform2D: { x: 720, y: 50, rotation: 0 },
-      transform3D: { position: [0, 0.05, -0.19], rotation: [0, Math.PI, 0] },
+      transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
       meshDensityMm: 24
     },
     {
@@ -1099,7 +1141,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 50, y: 820, rotation: 0 },
       transform3D: {
-        position: [-0.34, 0.22, 0],
+        position: [-0.30, 0.30, 0],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.08,
         arrangementPoint: 'arm_left_upper'
@@ -1120,7 +1162,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 500, y: 820, rotation: 0 },
       transform3D: {
-        position: [0.34, 0.22, 0],
+        position: [0.30, 0.30, 0],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.08,
         arrangementPoint: 'arm_right_upper'
@@ -1141,7 +1183,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 950, y: 820, rotation: 0 },
       transform3D: {
-        position: [-0.11, 0.50, -0.03],
+        position: [-0.11, 0.52, -0.03],
         rotation: [0, -Math.PI / 2, 0],
         curvatureRadius: 0.14,
         arrangementPoint: 'hood_left'
@@ -1162,7 +1204,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 1300, y: 820, rotation: 0 },
       transform3D: {
-        position: [0.11, 0.50, -0.03],
+        position: [0.11, 0.52, -0.03],
         rotation: [0, Math.PI / 2, 0],
         curvatureRadius: 0.14,
         arrangementPoint: 'hood_right'
@@ -1183,7 +1225,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 1400, y: 50, rotation: 0 },
       transform3D: {
-        position: [0, -0.16, 0.205],
+        position: [0, -0.07, 0.20],
         rotation: [0, 0, 0]
       },
       meshDensityMm: 24
@@ -1199,7 +1241,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 6,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1210,7 +1252,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 6,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1222,7 +1264,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1233,7 +1275,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-back',
       targetEdgeIndex: 8,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1245,7 +1287,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-sleeve-left',
       targetEdgeIndex: 4,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1256,7 +1298,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-sleeve-right',
       targetEdgeIndex: 4,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1265,9 +1307,20 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       id: 'seam-hoodie-armhole-left-front',
       name: 'Left Armhole Front',
       sourcePieceId: 'piece-hoodie-sleeve-left',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-hoodie-front',
       targetEdgeIndex: 7,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-hoodie-armhole-left-back',
+      name: 'Left Armhole Back',
+      sourcePieceId: 'piece-hoodie-sleeve-left',
+      sourceEdgeIndex: 3,
+      targetPieceId: 'piece-hoodie-back',
+      targetEdgeIndex: 2,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
@@ -1276,9 +1329,20 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       id: 'seam-hoodie-armhole-right-front',
       name: 'Right Armhole Front',
       sourcePieceId: 'piece-hoodie-sleeve-right',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-front',
       targetEdgeIndex: 2,
+      orientation: 'normal',
+      sewingMode: '1-to-1',
+      active: true
+    },
+    {
+      id: 'seam-hoodie-armhole-right-back',
+      name: 'Right Armhole Back',
+      sourcePieceId: 'piece-hoodie-sleeve-right',
+      sourceEdgeIndex: 2,
+      targetPieceId: 'piece-hoodie-back',
+      targetEdgeIndex: 7,
       orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
@@ -1291,7 +1355,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 1,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1302,7 +1366,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 2,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 2,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1313,7 +1377,7 @@ export function generateHoodieGarment(opts: GarmentCustomizationOptions = {}): G
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-hoodie-hood-right',
       targetEdgeIndex: 3,
-      orientation: 'normal',
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },

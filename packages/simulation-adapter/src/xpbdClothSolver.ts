@@ -260,8 +260,9 @@ export class GarmentClothSolver {
     const subDt2 = subDt * subDt;
     this.simulationTime += clampedDt;
 
-    // Gradual sewing force progression during the first seconds
-    const sewingMultiplier = Math.min(1.0, this.simulationTime * 0.85);
+    // Assembly phase: sewing active from start, gravity gracefully ramped over first 0.3s
+    const sewingMultiplier = 1.0;
+    const gravityFactor = Math.min(1.0, Math.max(0.15, this.simulationTime * 3.0));
 
     for (let step = 0; step < this.substeps; step++) {
       // 1. External forces & Verlet numerical integration
@@ -278,7 +279,7 @@ export class GarmentClothSolver {
         this.prevPositions[idx + 2] = this.positions[idx + 2];
 
         this.positions[idx] += vx;
-        this.positions[idx + 1] += vy - this.gravity * subDt2;
+        this.positions[idx + 1] += vy - this.gravity * gravityFactor * subDt2;
         this.positions[idx + 2] += vz;
       }
 

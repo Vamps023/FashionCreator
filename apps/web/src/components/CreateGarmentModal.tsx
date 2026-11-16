@@ -39,7 +39,7 @@ const TEMPLATE_CARDS: GarmentCardOption[] = [
     icon: '👕',
     description: 'Standard crewneck tee with front bodice, back bodice, and left/right sleeves.',
     patternCount: 4,
-    seamCount: 6
+    seamCount: 10
   },
   {
     type: 'dress',
@@ -91,12 +91,12 @@ const TEMPLATE_CARDS: GarmentCardOption[] = [
 export const CreateGarmentModal: React.FC<CreateGarmentModalProps> = ({ isOpen, onClose }) => {
   const { createNewGarment, setStatusMessage } = useEditorStore();
 
-  const [selectedType, setSelectedType] = useState<GarmentType>('tshirt');
-  const [garmentName, setGarmentName] = useState('My Custom T-Shirt');
-  const [fit, setFit] = useState<'slim' | 'regular' | 'relaxed' | 'oversized'>('regular');
+  const [selectedType, setSelectedType] = useState<GarmentType>('hoodie');
+  const [garmentName, setGarmentName] = useState('My Custom Hoodie');
+  const [fit, setFit] = useState<'slim' | 'regular' | 'relaxed' | 'oversized'>('relaxed');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [color, setColor] = useState('#2563eb');
-  const [physicalFabric, setPhysicalFabric] = useState('lightweight-cotton');
+  const [color, setColor] = useState('#1a1a1a');
+  const [physicalFabric, setPhysicalFabric] = useState('heavy-cotton-fleece');
 
   if (!isOpen) return null;
 

@@ -81,7 +81,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ onOpenCreateGarment })
           >
             <span className="text-base mb-0.5">🧥</span>
             <span className="text-[10px] leading-tight font-medium">Hoodie</span>
-            <span className="text-[8px] opacity-70">Oversized</span>
+            <span className="text-[8px] opacity-70">7-Piece</span>
           </button>
 
           <button

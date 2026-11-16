@@ -15,6 +15,7 @@ import { XPBDClothSolver, GarmentClothSolver } from '../packages/simulation-adap
 import {
   assembleGarmentFromPatterns,
   generateGarmentByType,
+  generateHoodieGarment,
   generateTShirtGarment,
   generateDressGarment,
   generatePantsGarment,
@@ -339,6 +340,16 @@ const tShirtAssembly = assembleGarmentFromPatterns(tShirtGarment.patternPieces, 
 assert(tShirtAssembly.geometry.attributes.position.count > 0, 'Suite 12: T-Shirt successfully triangulates and pre-wraps into 3D geometry');
 assert(tShirtAssembly.sewingConstraints.length > 0, 'Suite 12: T-Shirt seam pairs constructed across pattern boundary vertices');
 tShirtAssembly.geometry.dispose();
+
+// Verify 7-Piece Full Pattern Streetwear Hoodie
+const hoodieGarment = generateHoodieGarment({ fit: 'relaxed' });
+assert(hoodieGarment.type === 'hoodie', 'Suite 12: Hoodie generator returns valid hoodie garment type');
+assert(hoodieGarment.patternPieces.length === 7, 'Suite 12: Hoodie contains 7 pattern pieces (front, back, 2 sleeves, 2 hood cowls, kangaroo pocket)');
+assert(hoodieGarment.seams.length >= 13, 'Suite 12: Hoodie contains 13 directed seam connections');
+const hoodieAssembly = assembleGarmentFromPatterns(hoodieGarment.patternPieces, hoodieGarment.seams);
+assert(hoodieAssembly.geometry.attributes.position.count > 2000, 'Suite 12: 7-Piece Hoodie triangulates into high-definition 3D mesh (>2000 vertices)');
+assert(hoodieAssembly.sewingConstraints.length > 100, 'Suite 12: 7-Piece Hoodie establishes full seam graph (>100 seam vertex pairs)');
+hoodieAssembly.geometry.dispose();
 
 // Verify arrangement points
 const arrangementPointKeys = Object.keys(AVATAR_ARRANGEMENT_POINTS);

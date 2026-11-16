@@ -73,9 +73,9 @@ const TEMPLATE_CARDS: GarmentCardOption[] = [
     title: 'Oversized Streetwear Hoodie',
     category: 'Outerwear',
     icon: '🧥',
-    description: 'Heavyweight fleece hoodie with kangaroo pocket and double-layer hood.',
-    patternCount: 2,
-    seamCount: 4
+    description: 'Heavyweight fleece hoodie with kangaroo pocket, double-layer hood cowl, and sleeves.',
+    patternCount: 7,
+    seamCount: 13
   },
   {
     type: 'tunic',

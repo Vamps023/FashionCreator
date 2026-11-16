@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
   GarmentInstance,
   GarmentPartId,
@@ -55,6 +56,9 @@ export class ViewportController {
   private showArrangementPointsFlag: boolean = false;
 
   private mannequinGroup: THREE.Group | null = null;
+  private mannequinModelCache: THREE.Group | null = null;
+  private isMannequinLoading = false;
+  private currentAvatarConfig: AvatarConfiguration | null = null;
 
   // Compositors for print zones
   private frontCompositor: ArtworkCompositor;
@@ -493,11 +497,93 @@ export class ViewportController {
   }
 
   public setAvatar(avatarConfig: AvatarConfiguration): void {
-    if (this.mannequinGroup) {
-      this.scene.remove(this.mannequinGroup);
+    this.currentAvatarConfig = avatarConfig;
+
+    if (!avatarConfig.visible) {
+      if (this.mannequinGroup) {
+        this.mannequinGroup.visible = false;
+      }
+      return;
     }
-    this.mannequinGroup = buildMannequin(avatarConfig);
-    this.scene.add(this.mannequinGroup);
+
+    // If realistic glTF mannequin model is already loaded and cached:
+    if (this.mannequinModelCache) {
+      if (this.mannequinGroup !== this.mannequinModelCache) {
+        if (this.mannequinGroup) {
+          this.scene.remove(this.mannequinGroup);
+        }
+        this.mannequinGroup = this.mannequinModelCache;
+        this.scene.add(this.mannequinGroup);
+      }
+      this.mannequinGroup.visible = true;
+      this.updateMannequinSkinTone(this.mannequinGroup, avatarConfig.skinTone);
+      return;
+    }
+
+    // Immediate placeholder to avoid flicker while asset loads
+    if (!this.mannequinGroup) {
+      this.mannequinGroup = buildMannequin(avatarConfig);
+      this.scene.add(this.mannequinGroup);
+    } else {
+      this.mannequinGroup.visible = true;
+      this.updateMannequinSkinTone(this.mannequinGroup, avatarConfig.skinTone);
+    }
+
+    if (!this.isMannequinLoading) {
+      this.isMannequinLoading = true;
+      const loader = new GLTFLoader();
+      loader.load(
+        '/models/mannequin.glb',
+        (gltf) => {
+          const mannequinObj = gltf.scene;
+          mannequinObj.name = 'RealisticFashionMannequin';
+          // Ground feet at -1.08, align shoulders at 0.32
+          mannequinObj.position.set(0, -1.08, 0);
+
+          const skinColor = new THREE.Color(this.currentAvatarConfig?.skinTone || avatarConfig.skinTone || '#4a4036');
+          mannequinObj.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
+              mesh.castShadow = true;
+              mesh.receiveShadow = true;
+              mesh.material = new THREE.MeshStandardMaterial({
+                color: skinColor,
+                roughness: 0.65,
+                metalness: 0.12
+              });
+            }
+          });
+
+          this.mannequinModelCache = mannequinObj;
+          this.isMannequinLoading = false;
+
+          if (this.currentAvatarConfig && this.currentAvatarConfig.visible) {
+            if (this.mannequinGroup) {
+              this.scene.remove(this.mannequinGroup);
+            }
+            this.mannequinGroup = mannequinObj;
+            this.scene.add(this.mannequinGroup);
+          }
+        },
+        undefined,
+        (err) => {
+          console.warn('Could not load /models/mannequin.glb, falling back to procedural mannequin:', err);
+          this.isMannequinLoading = false;
+        }
+      );
+    }
+  }
+
+  private updateMannequinSkinTone(group: THREE.Group, skinTone?: string): void {
+    const color = new THREE.Color(skinTone || '#4a4036');
+    group.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material && !Array.isArray(mesh.material)) {
+          (mesh.material as THREE.MeshStandardMaterial).color = color;
+        }
+      }
+    });
   }
 
   public setEnvironment(config: StudioEnvironmentConfig): void {

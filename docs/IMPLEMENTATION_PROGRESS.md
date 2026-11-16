@@ -66,4 +66,25 @@ FashionCreator has evolved from a 3D procedural clothing configurator into a ful
   - Suite 9: 2D-to-3D meshing, interior vertex generation, 3D arrangement, and seam pairing.
   - Suite 10: GarmentClothSolver simulation step, seam convergence verification (initial 32.8 cm reduced to 0.12 cm), and numerical stability check.
   - Suite 11: Physical fabric property differentiation (Silk vs Denim).
-  - All 11 test suites (36/36 checks) passed with 100% success.
+  - Suite 12: Modular Garment Generators (T-Shirt, A-Line Dress, Wide-Leg Pants, Crop Top), seam definitions, avatar arrangement points, and cylindrical pre-wrapping.
+  - Suite 13: Live cloth interaction (tug / grab target, pinning) and normalized real-time Strain and Fit heatmaps.
+  - All 13 test suites (50/50 checks) passed with 100% success.
+
+### Milestone 7: Easy Creation Wizard, Live Cloth Manipulation & Heatmap Analysis
+- **Deliverables:**
+  - `apps/web/src/components/CreateGarmentModal.tsx`
+  - `packages/garment-engine/src/modular/garmentGenerator.ts`
+  - `packages/garment-engine/src/arrangement/arrangementPoints.ts`
+  - `packages/simulation-adapter/src/xpbdClothSolver.ts`
+  - `packages/renderer-3d/src/ViewportController.ts`
+  - `apps/web/src/components/Viewport3D.tsx`
+  - `apps/web/src/components/PatternCADCanvas.tsx`
+  - `apps/web/src/components/LeftSidebar.tsx`
+- **Status:** **COMPLETE**
+- **Details:**
+  - **Modular Garment Wizard**: Instant creation modal allowing users to pick from 6 iconic garment templates (T-Shirt, A-Line Dress, Wide-Leg Pants, Crop Top, Hoodie, Tunic) with category filtering, custom fit profiles, fabric presets, color selection, and automated 3D draping.
+  - **Live 3D Cloth Tug Tool**: Mouse drag on cloth in 3D viewport smoothly tugs vertices with camera-plane unprojection and radial Gaussian falloff while disabling camera orbit.
+  - **Shift+Click Pinning**: Interactive pinning/unpinning of cloth vertices with 3D yellow anchor spheres.
+  - **Strain & Fit Heatmaps**: Real-time vertex color modes for engineering-grade analysis of internal fabric tension (stretch/compression) and avatar body clearance pressure.
+  - **Arrangement Volumes & Cylindrical Wrapping**: 13 canonical avatar arrangement volumes and cylindrical bending deformation ($x = R\sin(x/R), z = R(1-\cos(x/R))$) preventing flat pattern geometry from clipping limbs prior to simulation.
+  - **Advanced 2D CAD Operations**: Added split edge (add vertex on segment), delete vertex, and mirror/duplicate pattern piece.

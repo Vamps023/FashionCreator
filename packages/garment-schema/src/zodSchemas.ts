@@ -10,7 +10,10 @@ export const GarmentTypeSchema = z.enum([
   'jacket',
   'trousers',
   'dress',
-  'tunic'
+  'skirt',
+  'tunic',
+  'croptop',
+  'shorts'
 ]);
 
 export const EditorModeSchema = z.enum([
@@ -68,7 +71,10 @@ export const PatternPieceSchema = z.object({
   }).default({ x: 0, y: 0, rotation: 0 }),
   transform3D: z.object({
     position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-    rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0])
+    rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+    curvatureRadius: z.number().optional(),
+    facingDirection: z.enum(['front', 'back', 'left', 'right']).optional(),
+    arrangementPoint: z.string().optional()
   }).default({ position: [0, 0, 0], rotation: [0, 0, 0] }),
   meshDensityMm: z.number().min(5).max(100).default(20)
 });

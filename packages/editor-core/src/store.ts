@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import {
   GarmentProject,
   GarmentInstance,
+  GarmentType,
+  ViewportDisplayMode,
   EditorMode,
   GarmentPartId,
   FabricMaterial,
@@ -28,6 +30,8 @@ export interface EditorState {
   activePrintZone: SurfacePrintZone;
   cameraPreset: 'front' | 'back' | 'left' | 'right' | 'perspective';
   wireframeMode: boolean;
+  displayMode: ViewportDisplayMode;
+  showArrangementPoints: boolean;
   viewMode2D3D: '3d-only' | 'split' | '2d-only';
   statusMessage: string;
   isDirty: boolean;
@@ -43,6 +47,8 @@ export interface EditorState {
   setActivePrintZone: (zone: SurfacePrintZone) => void;
   setCameraPreset: (preset: 'front' | 'back' | 'left' | 'right' | 'perspective') => void;
   setWireframeMode: (enabled: boolean) => void;
+  setDisplayMode: (mode: ViewportDisplayMode) => void;
+  setShowArrangementPoints: (show: boolean) => void;
   setViewMode2D3D: (mode: '3d-only' | 'split' | '2d-only') => void;
   setStatusMessage: (msg: string) => void;
   setAvatarVisible: (visible: boolean) => void;
@@ -50,6 +56,7 @@ export interface EditorState {
   // Document Mutators with Undo/Redo recording
   updateProjectName: (name: string) => void;
   updateActiveGarment: (updater: (g: GarmentInstance) => GarmentInstance) => void;
+  createNewGarment: (garment: GarmentInstance) => void;
   updateGarmentParameters: (params: Partial<GarmentParameters>) => void;
   updateComponentOption: <K extends keyof GarmentComponentOptions>(
     slot: K,
@@ -66,7 +73,7 @@ export interface EditorState {
   reorderArtworkLayers: (sourceIndex: number, destIndex: number) => void;
 
   // Template / Project level
-  switchGarmentTemplate: (type: 'hoodie' | 'tshirt' | 'tunic') => void;
+  switchGarmentTemplate: (type: GarmentType | 'hoodie' | 'tshirt' | 'tunic') => void;
   loadProject: (project: GarmentProject) => void;
   resetProject: () => void;
   undo: () => void;
@@ -104,6 +111,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
     activePrintZone: 'front-print',
     cameraPreset: 'perspective',
     wireframeMode: false,
+    displayMode: 'pbr',
+    showArrangementPoints: false,
     viewMode2D3D: 'split',
     statusMessage: 'Ready · Saved locally',
     isDirty: false,
@@ -125,6 +134,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     setCameraPreset: (preset) => set({ cameraPreset: preset }),
 
     setWireframeMode: (enabled) => set({ wireframeMode: enabled }),
+
+    setDisplayMode: (mode) => set({ displayMode: mode }),
+
+    setShowArrangementPoints: (show) => set({ showArrangementPoints: show }),
 
     setViewMode2D3D: (mode) => set({ viewMode2D3D: mode }),
 
@@ -151,6 +164,26 @@ export const useEditorStore = create<EditorState>((set, get) => {
         project: next,
         activeGarmentId: next.activeGarmentId,
         isDirty: true
+      });
+    },
+
+    createNewGarment: (newGarment) => {
+      const prev = get().project;
+      const next: GarmentProject = {
+        ...prev,
+        name: newGarment.name,
+        activeGarmentId: newGarment.id,
+        garments: [newGarment]
+      };
+      history.clear();
+      set({
+        project: next,
+        activeGarmentId: newGarment.id,
+        selectedPartId: 'body_front',
+        selectedArtworkLayerId: newGarment.artworkLayers?.[0]?.id || null,
+        canUndo: false,
+        canRedo: false,
+        statusMessage: `Loaded ${newGarment.name}`
       });
     },
 

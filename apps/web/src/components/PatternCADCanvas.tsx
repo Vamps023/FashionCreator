@@ -11,10 +11,13 @@ import {
   ZoomIn,
   ZoomOut,
   Ruler,
-  Check
+  Check,
+  Split,
+  Copy,
+  CircleDot
 } from 'lucide-react';
 
-export type CADTool = 'select' | 'sew' | 'add-rect' | 'measure';
+export type CADTool = 'select' | 'sew' | 'split' | 'add-rect' | 'measure';
 
 export const PatternCADCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -287,6 +290,16 @@ export const PatternCADCanvas: React.FC = () => {
         const dEdge = distToSegment([localX, localY], p1, p2);
 
         if (dEdge <= 14 / zoom) {
+          if (activeTool === 'split') {
+            const dx = p2[0] - p1[0];
+            const dy = p2[1] - p1[1];
+            const len2 = dx * dx + dy * dy;
+            const t = Math.max(0.08, Math.min(0.92, ((localX - p1[0]) * dx + (localY - p1[1]) * dy) / len2));
+            const newPt: [number, number] = [Math.round(p1[0] + dx * t), Math.round(p1[1] + dy * t)];
+            insertVertexOnEdge(piece.id, eIdx, newPt);
+            return;
+          }
+
           if (activeTool === 'sew') {
             if (!sewingSource) {
               setSewingSource({ pieceId: piece.id, edgeIndex: eIdx });
@@ -429,6 +442,76 @@ export const PatternCADCanvas: React.FC = () => {
     setStatusMessage('Added new pattern piece');
   }
 
+  function insertVertexOnEdge(pieceId: string, edgeIdx: number, newPt: [number, number]) {
+    const updated = pieces.map((p) => {
+      if (p.id !== pieceId) return p;
+      const pts = [...p.outlinePoints];
+      pts.splice(edgeIdx + 1, 0, newPt);
+      return { ...p, outlinePoints: pts };
+    });
+    updateActiveGarment((g) => ({ ...g, patternPieces: updated }));
+    setSelectedPointIndex(edgeIdx + 1);
+    setStatusMessage(`Inserted new point on segment`);
+  }
+
+  function handleDeleteVertex() {
+    if (!selectedPieceId || selectedPointIndex === null) return;
+    const piece = pieces.find((p) => p.id === selectedPieceId);
+    if (!piece || piece.outlinePoints.length <= 3) {
+      setStatusMessage('Pattern piece must maintain at least 3 vertices');
+      return;
+    }
+    const updatedPts = piece.outlinePoints.filter((_, idx) => idx !== selectedPointIndex);
+    const updated = pieces.map((p) =>
+      p.id === selectedPieceId ? { ...p, outlinePoints: updatedPts } : p
+    );
+    updateActiveGarment((g) => ({ ...g, patternPieces: updated }));
+    setSelectedPointIndex(null);
+    setStatusMessage('Deleted vertex');
+  }
+
+  function handleMirrorPiece() {
+    if (!selectedPieceId) return;
+    const piece = pieces.find((p) => p.id === selectedPieceId);
+    if (!piece) return;
+
+    let minX = Infinity, maxX = -Infinity;
+    piece.outlinePoints.forEach(([x]) => {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    });
+    const midX = (minX + maxX) / 2;
+
+    const mirroredPts: [number, number][] = piece.outlinePoints
+      .map(([x, y]): [number, number] => [Math.round(2 * midX - x), y])
+      .reverse();
+
+    const newId = `piece-${piece.name.toLowerCase().replace(/\s+/g, '-')}-mirror-${Date.now().toString(36)}`;
+    const mirroredPiece: PatternPiece = {
+      ...piece,
+      id: newId,
+      name: `${piece.name} (Copy)`,
+      outlinePoints: mirroredPts,
+      mirrored: true,
+      transform2D: {
+        x: piece.transform2D.x + (maxX - minX) + 60,
+        y: piece.transform2D.y,
+        rotation: piece.transform2D.rotation
+      },
+      transform3D: {
+        ...piece.transform3D,
+        position: [-piece.transform3D.position[0], piece.transform3D.position[1], piece.transform3D.position[2]]
+      }
+    };
+
+    updateActiveGarment((g) => ({
+      ...g,
+      patternPieces: [...g.patternPieces, mirroredPiece]
+    }));
+    setSelectedPieceId(newId);
+    setStatusMessage(`Created mirrored copy of ${piece.name}`);
+  }
+
   function handleDeleteSelected() {
     if (!selectedPieceId) return;
     const updatedPieces = pieces.filter((p) => p.id !== selectedPieceId);
@@ -479,6 +562,22 @@ export const PatternCADCanvas: React.FC = () => {
           </button>
 
           <button
+            onClick={() => {
+              setActiveTool('split');
+              setSewingSource(null);
+            }}
+            className={`p-1.5 rounded text-xs flex items-center gap-1.5 transition-colors ${
+              activeTool === 'split'
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
+            }`}
+            title="Split Edge / Add Point Tool — Click edge to insert new vertex"
+          >
+            <Split className="w-3.5 h-3.5" />
+            <span>Add Point</span>
+          </button>
+
+          <button
             onClick={handleAddRectanglePiece}
             className="p-1.5 rounded text-xs flex items-center gap-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white transition-colors"
             title="Create New Fabric Panel"
@@ -486,6 +585,28 @@ export const PatternCADCanvas: React.FC = () => {
             <Plus className="w-3.5 h-3.5" />
             <span>Add Panel</span>
           </button>
+
+          {selectedPieceId && (
+            <button
+              onClick={handleMirrorPiece}
+              className="p-1.5 rounded text-xs flex items-center gap-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white transition-colors"
+              title="Duplicate & Mirror Pattern Panel"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Mirror</span>
+            </button>
+          )}
+
+          {selectedPointIndex !== null && selectedPieceId && (
+            <button
+              onClick={handleDeleteVertex}
+              className="p-1.5 rounded text-xs flex items-center gap-1.5 text-amber-400 hover:bg-amber-500/10 transition-colors"
+              title="Delete Selected Vertex"
+            >
+              <CircleDot className="w-3.5 h-3.5" />
+              <span>Delete Point</span>
+            </button>
+          )}
 
           {selectedPieceId && (
             <button

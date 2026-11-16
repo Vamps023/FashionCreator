@@ -80,9 +80,17 @@ export function assembleGarmentFromPatterns(
       allUvs.push(u, vUv);
 
       // Center piece around its own local origin in mm, convert to meters
-      const localX = (pxMm - (minX + maxX) / 2) / 1000;
+      let localX = (pxMm - (minX + maxX) / 2) / 1000;
       const localY = (pyMm - (minY + maxY) / 2) / 1000;
-      const localZ = 0;
+      let localZ = 0;
+
+      // Apply cylindrical pre-wrapping around limbs / body if curvatureRadius is defined
+      const curvatureR = piece.transform3D.curvatureRadius;
+      if (curvatureR && curvatureR > 0.01) {
+        const theta = localX / curvatureR;
+        localX = curvatureR * Math.sin(theta);
+        localZ = curvatureR * (1 - Math.cos(theta));
+      }
 
       // Apply 3D rotation and translation
       const vec = new THREE.Vector3(localX, localY, localZ);

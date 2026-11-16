@@ -13,7 +13,20 @@ export type EditorMode =
   | 'artwork'
   | 'render';
 
-export type GarmentType = 'hoodie' | 'tshirt' | 'sweatshirt' | 'shirt' | 'jacket' | 'trousers' | 'dress' | 'tunic';
+export type GarmentType =
+  | 'hoodie'
+  | 'tshirt'
+  | 'sweatshirt'
+  | 'shirt'
+  | 'jacket'
+  | 'trousers'
+  | 'dress'
+  | 'skirt'
+  | 'tunic'
+  | 'croptop'
+  | 'shorts';
+
+export type ViewportDisplayMode = 'pbr' | 'wireframe' | 'strain' | 'fit';
 
 export type FitProfile = 'slim' | 'regular' | 'relaxed' | 'oversized';
 
@@ -62,6 +75,9 @@ export interface PatternPiece {
   transform3D: {
     position: [number, number, number]; // [x, y, z] in meters
     rotation: [number, number, number]; // Euler [rx, ry, rz]
+    curvatureRadius?: number; // Pre-bent cylindrical radius for sleeves / collars / skirts in meters
+    facingDirection?: 'front' | 'back' | 'left' | 'right';
+    arrangementPoint?: string; // ID of target avatar arrangement volume
   };
   meshDensityMm: number; // Particle distance for triangulation (e.g. 15-20mm)
 }

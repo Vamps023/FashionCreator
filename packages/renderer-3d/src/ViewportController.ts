@@ -4,14 +4,16 @@ import {
   GarmentInstance,
   GarmentPartId,
   StudioEnvironmentConfig,
-  AvatarConfiguration
+  AvatarConfiguration,
+  ViewportDisplayMode
 } from '@fashion-studio/garment-schema';
 import {
   buildHoodieScene,
   GarmentSceneGraph,
   buildMannequin,
   assembleGarmentFromPatterns,
-  AssembledGarmentMesh
+  AssembledGarmentMesh,
+  AVATAR_ARRANGEMENT_POINTS
 } from '@fashion-studio/garment-engine';
 import { ArtworkCompositor } from '@fashion-studio/artwork-engine';
 import { createPhysicalFabricMaterial, updatePhysicalFabricMaterial } from '@fashion-studio/material-engine';
@@ -38,6 +40,17 @@ export class ViewportController {
   private assembledData: AssembledGarmentMesh | null = null;
   public clothSolver: GarmentClothSolver | null = null;
   public isSimulationRunning: boolean = false;
+  public displayMode: ViewportDisplayMode = 'pbr';
+
+  // Live 3D Cloth Tug Tool state
+  private isGrabbingCloth: boolean = false;
+  private grabVertexIndex: number = -1;
+  private grabPlane = new THREE.Plane();
+
+  // Visual Groups
+  private arrangementGroup: THREE.Group | null = null;
+  private pinGroup: THREE.Group | null = null;
+  private showArrangementPointsFlag: boolean = false;
 
   private mannequinGroup: THREE.Group | null = null;
 
@@ -64,6 +77,7 @@ export class ViewportController {
   public onPartHovered?: (partId: GarmentPartId | null) => void;
   public onPerformanceStats?: (stats: PerformanceStats) => void;
   public onSimulationStateChange?: (isRunning: boolean) => void;
+  public onArrangementPointClicked?: (pointId: string) => void;
 
   // Performance tracking
   private frameCount = 0;
@@ -164,6 +178,7 @@ export class ViewportController {
     if (!this.container) return;
     this.container.addEventListener('pointermove', this.onPointerMove);
     this.container.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('resize', this.onWindowResize);
   }
 
@@ -172,6 +187,21 @@ export class ViewportController {
     const rect = this.container.getBoundingClientRect();
     this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Handle active 3D cloth grabbing (Live Tug Tool)
+    if (this.isGrabbingCloth && this.clothSolver && this.grabVertexIndex !== -1) {
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      const targetPos = new THREE.Vector3();
+      if (this.raycaster.ray.intersectPlane(this.grabPlane, targetPos)) {
+        this.clothSolver.grabTarget = {
+          vertexIndex: this.grabVertexIndex,
+          targetPosition: targetPos,
+          radius: 0.09,
+          strength: 0.96
+        };
+      }
+      return;
+    }
 
     this.checkHoverIntersection();
   };
@@ -184,6 +214,62 @@ export class ViewportController {
 
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
+    // 1. Check if an Arrangement Point was clicked
+    if (this.showArrangementPointsFlag && this.arrangementGroup) {
+      const arrIntersects = this.raycaster.intersectObjects(this.arrangementGroup.children, true);
+      if (arrIntersects.length > 0) {
+        const pointId = arrIntersects[0].object.userData.arrangementPointId;
+        if (pointId) {
+          this.onArrangementPointClicked?.(pointId);
+          return;
+        }
+      }
+    }
+
+    // 2. Interactive Cloth Manipulation (Tug / Grab & Pinning)
+    if (this.simulatedMesh) {
+      const clothHits = this.raycaster.intersectObject(this.simulatedMesh, false);
+      if (clothHits.length > 0) {
+        const hit = clothHits[0];
+        const hitPoint = hit.point;
+
+        // Find nearest vertex
+        const posAttr = this.simulatedMesh.geometry.attributes.position;
+        let nearestVertex = -1;
+        let minDist = Infinity;
+        const tempV = new THREE.Vector3();
+        for (let i = 0; i < posAttr.count; i++) {
+          tempV.fromBufferAttribute(posAttr, i);
+          const d = tempV.distanceTo(hitPoint);
+          if (d < minDist) {
+            minDist = d;
+            nearestVertex = i;
+          }
+        }
+
+        // Shift + Click: Toggle Cloth Vertex Pinning
+        if (e.shiftKey && this.clothSolver && nearestVertex !== -1) {
+          this.clothSolver.togglePinVertex(nearestVertex);
+          this.updatePinMarkers();
+          return;
+        }
+
+        // Live 3D Cloth Tug Tool (while simulating)
+        if (this.clothSolver && nearestVertex !== -1) {
+          this.isGrabbingCloth = true;
+          this.grabVertexIndex = nearestVertex;
+          if (this.controls) this.controls.enabled = false;
+
+          // Camera-facing plane through hit point
+          const camDir = new THREE.Vector3();
+          this.camera.getWorldDirection(camDir);
+          this.grabPlane.setFromNormalAndCoplanarPoint(camDir.negate(), hitPoint);
+          return;
+        }
+      }
+    }
+
+    // 3. Normal Part Selection
     const targetMeshes: THREE.Object3D[] = [];
     if (this.simulatedMesh) targetMeshes.push(this.simulatedMesh);
     if (this.garmentGraph) targetMeshes.push(...Array.from(this.garmentGraph.parts.values()));
@@ -195,6 +281,19 @@ export class ViewportController {
       this.selectedPartId = partId;
       this.onPartSelected?.(partId);
       this.applyHighlight();
+    }
+  };
+
+  private onPointerUp = () => {
+    if (this.isGrabbingCloth) {
+      this.isGrabbingCloth = false;
+      this.grabVertexIndex = -1;
+      if (this.clothSolver) {
+        this.clothSolver.grabTarget = null;
+      }
+      if (this.controls) {
+        this.controls.enabled = true;
+      }
     }
   };
 
@@ -427,6 +526,85 @@ export class ViewportController {
     this.clothSolver?.reset();
     this.isSimulationRunning = false;
     this.onSimulationStateChange?.(false);
+    this.updatePinMarkers();
+  }
+
+  public setDisplayMode(mode: ViewportDisplayMode): void {
+    this.displayMode = mode;
+    if (!this.simulatedMesh) return;
+
+    const mat = this.simulatedMesh.material as THREE.MeshPhysicalMaterial;
+    if (mode === 'wireframe') {
+      mat.wireframe = true;
+      mat.vertexColors = false;
+      mat.needsUpdate = true;
+    } else if (mode === 'strain' || mode === 'fit') {
+      mat.wireframe = false;
+      mat.vertexColors = true;
+      mat.needsUpdate = true;
+    } else {
+      mat.wireframe = false;
+      mat.vertexColors = false;
+      mat.needsUpdate = true;
+    }
+  }
+
+  public setShowArrangementPoints(show: boolean): void {
+    this.showArrangementPointsFlag = show;
+    if (!show) {
+      if (this.arrangementGroup) {
+        this.scene.remove(this.arrangementGroup);
+        this.arrangementGroup = null;
+      }
+      return;
+    }
+
+    if (this.arrangementGroup) return;
+
+    this.arrangementGroup = new THREE.Group();
+    this.arrangementGroup.name = 'ArrangementPoints';
+
+    const sphereGeo = new THREE.SphereGeometry(0.024, 16, 16);
+    const pointMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    Object.values(AVATAR_ARRANGEMENT_POINTS).forEach((pt) => {
+      const mesh = new THREE.Mesh(sphereGeo, pointMat.clone());
+      mesh.position.set(pt.position[0], pt.position[1], pt.position[2]);
+      mesh.userData = { arrangementPointId: pt.id, pointName: pt.name };
+      this.arrangementGroup?.add(mesh);
+    });
+
+    this.scene.add(this.arrangementGroup);
+  }
+
+  private updatePinMarkers(): void {
+    if (!this.clothSolver || !this.simulatedMesh) return;
+    if (this.pinGroup) {
+      this.scene.remove(this.pinGroup);
+      this.pinGroup = null;
+    }
+    if (this.clothSolver.pinnedIndices.size === 0) return;
+
+    this.pinGroup = new THREE.Group();
+    this.pinGroup.name = 'PinMarkers';
+    const pinGeo = new THREE.SphereGeometry(0.012, 12, 12);
+    const pinMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+
+    const posAttr = this.simulatedMesh.geometry.attributes.position;
+    for (const vIdx of this.clothSolver.pinnedIndices) {
+      const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+      pinMesh.position.set(
+        posAttr.getX(vIdx),
+        posAttr.getY(vIdx),
+        posAttr.getZ(vIdx)
+      );
+      this.pinGroup.add(pinMesh);
+    }
+    this.scene.add(this.pinGroup);
   }
 
   private onWindowResize = () => {
@@ -447,6 +625,21 @@ export class ViewportController {
       // Step cloth physics solver if simulation is active
       if (this.isSimulationRunning && this.clothSolver) {
         this.clothSolver.step(0.016);
+      }
+
+      // Update Live Heatmap colors if strain or fit display mode is active
+      if (this.simulatedMesh && this.clothSolver && (this.displayMode === 'strain' || this.displayMode === 'fit')) {
+        const colors = this.displayMode === 'strain'
+          ? this.clothSolver.computeStrainColors()
+          : this.clothSolver.computeFitColors();
+        
+        let colorAttr = this.simulatedMesh.geometry.getAttribute('color') as THREE.BufferAttribute;
+        if (!colorAttr || colorAttr.count !== colors.length / 3) {
+          this.simulatedMesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        } else {
+          (colorAttr.array as Float32Array).set(colors);
+          colorAttr.needsUpdate = true;
+        }
       }
 
       if (this.renderer) {

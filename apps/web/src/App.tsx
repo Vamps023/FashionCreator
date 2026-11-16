@@ -13,6 +13,7 @@ import { PatternCADCanvas } from './components/PatternCADCanvas';
 import { BottomBar } from './components/BottomBar';
 import { DashboardModal } from './components/DashboardModal';
 import { GLBValidatorModal } from './components/GLBValidatorModal';
+import { CreateGarmentModal } from './components/CreateGarmentModal';
 
 export const AppContent: React.FC = () => {
   const [stats, setStats] = useState<PerformanceStats>({
@@ -23,6 +24,7 @@ export const AppContent: React.FC = () => {
 
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isGLBValidatorOpen, setIsGLBValidatorOpen] = useState(false);
+  const [isCreateGarmentOpen, setIsCreateGarmentOpen] = useState(false);
   const [isSimRunning, setIsSimRunning] = useState(false);
 
   const viewportRef = useRef<Viewport3DHandle>(null);
@@ -135,6 +137,7 @@ export const AppContent: React.FC = () => {
       <Header
         onOpenDashboard={() => setIsDashboardOpen(true)}
         onOpenGLBValidator={() => setIsGLBValidatorOpen(true)}
+        onOpenCreateGarment={() => setIsCreateGarmentOpen(true)}
         onExportPNG={handleExportPNG}
         onExportGLB={handleExportGLB}
       />
@@ -143,7 +146,7 @@ export const AppContent: React.FC = () => {
       <main className="flex-1 flex overflow-hidden relative">
         {/* Left Resizable Panel */}
         <ResizablePanel side="left" defaultWidth={260} minWidth={200} maxWidth={380}>
-          <LeftSidebar />
+          <LeftSidebar onOpenCreateGarment={() => setIsCreateGarmentOpen(true)} />
         </ResizablePanel>
 
         {/* Center Viewport and 2D Editors (Split / 2D / 3D Layout) */}
@@ -201,6 +204,12 @@ export const AppContent: React.FC = () => {
       <GLBValidatorModal
         isOpen={isGLBValidatorOpen}
         onClose={() => setIsGLBValidatorOpen(false)}
+      />
+
+      {/* Modular Garment Creation Wizard Modal */}
+      <CreateGarmentModal
+        isOpen={isCreateGarmentOpen}
+        onClose={() => setIsCreateGarmentOpen(false)}
       />
     </div>
   );

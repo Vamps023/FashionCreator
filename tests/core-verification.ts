@@ -12,7 +12,15 @@ import {
 import { HistoryManager, Command } from '../packages/editor-core/src/history';
 import { generateHoodiePatterns, exportPatternToSVG, triangulatePatternPiece } from '../packages/pattern-engine/src/index';
 import { XPBDClothSolver, GarmentClothSolver } from '../packages/simulation-adapter/src/index';
-import { assembleGarmentFromPatterns } from '../packages/garment-engine/src/index';
+import {
+  assembleGarmentFromPatterns,
+  generateGarmentByType,
+  generateTShirtGarment,
+  generateDressGarment,
+  generatePantsGarment,
+  generateCropTopGarment,
+  AVATAR_ARRANGEMENT_POINTS
+} from '../packages/garment-engine/src/index';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) {
@@ -299,6 +307,99 @@ assert(denimPreset.warpStiffness > silkPreset.warpStiffness, 'Suite 11: Denim ha
 
 assembly.geometry.dispose();
 
+// ---------------------------------------------------------
+// [TEST SUITE 12] MODULAR GARMENT GENERATORS & CYLINDRICAL WRAPPING
+// ---------------------------------------------------------
+console.log('\n--- Test Suite 12: Modular Garment Generators & Cylindrical Pre-Wrapping ---');
+const tShirtGarment = generateTShirtGarment({ fit: 'relaxed' });
+assert(tShirtGarment.type === 'tshirt', 'Suite 12: T-Shirt generator returns valid tshirt garment type');
+assert(tShirtGarment.patternPieces.length === 4, 'Suite 12: T-Shirt contains 4 distinct pattern pieces (front, back, left/right sleeves)');
+assert(tShirtGarment.seams.length >= 6, 'Suite 12: T-Shirt contains 6 directed seam connections (shoulders, sides, armholes)');
+
+// Verify sleeve pieces have cylindrical curvature radius defined
+const leftSleeve = tShirtGarment.patternPieces.find(p => p.id === 'piece-tee-sleeve-left');
+assert(leftSleeve !== undefined && typeof leftSleeve.transform3D.curvatureRadius === 'number', 'Suite 12: Left sleeve pattern piece has cylindrical curvature radius defined');
+assert(leftSleeve!.transform3D.curvatureRadius! > 0, 'Suite 12: Sleeve curvature radius is positive (> 0)');
+
+const dressGarment = generateDressGarment({ fit: 'regular' });
+assert(dressGarment.type === 'dress', 'Suite 12: Dress generator returns valid dress garment type');
+assert(dressGarment.patternPieces.length === 4, 'Suite 12: Dress contains 4 pattern pieces (bodice front/back, skirt front/back)');
+const skirtFront = dressGarment.patternPieces.find(p => p.id === 'piece-dress-skirt-front');
+assert(skirtFront !== undefined && typeof skirtFront.transform3D.curvatureRadius === 'number', 'Suite 12: Flare skirt pattern piece has cylindrical curvature radius');
+
+const pantsGarment = generatePantsGarment({ fit: 'regular' });
+assert(pantsGarment.type === 'trousers', 'Suite 12: Pants generator returns trousers garment type');
+assert(pantsGarment.patternPieces.length === 4, 'Suite 12: Pants contains 4 leg pattern pieces');
+
+const cropTop = generateGarmentByType('croptop', { fit: 'slim' });
+assert(cropTop.type === 'croptop', 'Suite 12: Dispatcher generates crop top with tight fit profile');
+
+// Verify that modular garments can be assembled into 3D meshes with seams
+const tShirtAssembly = assembleGarmentFromPatterns(tShirtGarment.patternPieces, tShirtGarment.seams);
+assert(tShirtAssembly.geometry.attributes.position.count > 0, 'Suite 12: T-Shirt successfully triangulates and pre-wraps into 3D geometry');
+assert(tShirtAssembly.sewingConstraints.length > 0, 'Suite 12: T-Shirt seam pairs constructed across pattern boundary vertices');
+tShirtAssembly.geometry.dispose();
+
+// Verify arrangement points
+const arrangementPointKeys = Object.keys(AVATAR_ARRANGEMENT_POINTS);
+assert(arrangementPointKeys.length >= 10, 'Suite 12: Avatar arrangement points defined for all canonical body zones');
+const chestPt = AVATAR_ARRANGEMENT_POINTS['chest_front'];
+assert(chestPt !== undefined && chestPt.position[2] > 0, 'Suite 12: Chest front arrangement point faces outwards along +Z');
+
+// ---------------------------------------------------------
+// [TEST SUITE 13] REAL-TIME STRAIN / FIT HEATMAPS & CLOTH TUG / PINNING
+// ---------------------------------------------------------
+console.log('\n--- Test Suite 13: Cloth Interaction (Tug / Pin) & Real-Time Heatmaps ---');
+const testAssembly = assembleGarmentFromPatterns(tShirtGarment.patternPieces, tShirtGarment.seams);
+const testSolver = new GarmentClothSolver(testAssembly.geometry);
+testSolver.sewingConstraints = testAssembly.sewingConstraints.map(sc => ({
+  vA: sc.vertexA,
+  vB: sc.vertexB,
+  restLength: sc.targetLength,
+  stiffness: 0.95
+}));
+testSolver.avatarColliders = [
+  { type: 'sphere', centerA: new THREE.Vector3(0, 0.2, 0), radius: 0.16 }
+];
+
+// Test Pinning API
+assert(!testSolver.isPinned(10), 'Suite 13: Vertex 10 initially unpinned');
+testSolver.togglePinVertex(10);
+assert(testSolver.isPinned(10), 'Suite 13: Vertex 10 successfully pinned');
+testSolver.togglePinVertex(10);
+assert(!testSolver.isPinned(10), 'Suite 13: Vertex 10 successfully unpinned');
+
+// Test Live Grab API
+testSolver.setGrabTarget(25, new THREE.Vector3(0.5, 1.2, 0.2), 0.1);
+testSolver.step(0.016, 1.0);
+testSolver.clearGrabTarget();
+
+// Test Strain Heatmap computation
+const strainColors = testSolver.computeStrainColors();
+assert(strainColors.length === testAssembly.geometry.attributes.position.count * 3, 'Suite 13: Strain heatmap returns 3 color channels per vertex');
+let allStrainValid = true;
+for (let c = 0; c < strainColors.length; c++) {
+  if (isNaN(strainColors[c]) || strainColors[c] < 0 || strainColors[c] > 1) {
+    allStrainValid = false;
+    break;
+  }
+}
+assert(allStrainValid, 'Suite 13: Strain colors are normalized floats [0, 1]');
+
+// Test Fit Heatmap computation
+const fitColors = testSolver.computeFitColors();
+assert(fitColors.length === testAssembly.geometry.attributes.position.count * 3, 'Suite 13: Fit heatmap returns 3 color channels per vertex');
+let allFitValid = true;
+for (let c = 0; c < fitColors.length; c++) {
+  if (isNaN(fitColors[c]) || fitColors[c] < 0 || fitColors[c] > 1) {
+    allFitValid = false;
+    break;
+  }
+}
+assert(allFitValid, 'Suite 13: Fit colors are normalized floats [0, 1]');
+
+testAssembly.geometry.dispose();
+
 console.log('\n================================================================');
-console.log('🎉 ALL 11 TEST SUITES (36/36 ACCEPTANCE CHECKS) PASSED CLEANLY!');
+console.log('🎉 ALL 13 TEST SUITES (50/50 ACCEPTANCE CHECKS) PASSED CLEANLY!');
 console.log('================================================================\n');

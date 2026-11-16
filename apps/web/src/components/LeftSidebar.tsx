@@ -4,6 +4,7 @@ import {
   useActiveGarment
 } from '@fashion-studio/editor-core';
 import { GarmentPartId } from '@fashion-studio/garment-schema';
+import { generateGarmentByType } from '@fashion-studio/garment-engine';
 import {
   Layers,
   Shirt,
@@ -14,10 +15,15 @@ import {
   Type,
   Image as ImageIcon,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react';
 
-export const LeftSidebar: React.FC = () => {
+interface LeftSidebarProps {
+  onOpenCreateGarment?: () => void;
+}
+
+export const LeftSidebar: React.FC<LeftSidebarProps> = ({ onOpenCreateGarment }) => {
   const {
     selectedPartId,
     selectedArtworkLayerId,
@@ -26,6 +32,7 @@ export const LeftSidebar: React.FC = () => {
     updateArtworkLayer,
     removeArtworkLayer,
     switchGarmentTemplate,
+    createNewGarment,
     setActiveMode
   } = useEditorStore();
 
@@ -51,7 +58,16 @@ export const LeftSidebar: React.FC = () => {
             <Shirt className="w-3.5 h-3.5 text-[var(--accent)]" />
             Garment Library
           </span>
-          <span className="text-[10px] text-[var(--text-secondary)] font-mono">v1.0</span>
+          {onOpenCreateGarment && (
+            <button
+              onClick={onOpenCreateGarment}
+              className="text-[10px] bg-[var(--accent)] text-white px-2 py-0.5 rounded font-medium hover:opacity-90 flex items-center gap-1 transition-opacity shadow-sm"
+              title="Create Custom Garment with Wizard"
+            >
+              <Sparkles className="w-2.5 h-2.5" />
+              + Wizard
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-1.5">
@@ -63,22 +79,61 @@ export const LeftSidebar: React.FC = () => {
                 : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <span className="text-lg mb-0.5">🧥</span>
-            <span className="text-[11px] leading-tight font-medium">Hoodie</span>
-            <span className="text-[9px] opacity-70">Oversized</span>
+            <span className="text-base mb-0.5">🧥</span>
+            <span className="text-[10px] leading-tight font-medium">Hoodie</span>
+            <span className="text-[8px] opacity-70">Oversized</span>
           </button>
 
           <button
-            onClick={() => switchGarmentTemplate('tshirt')}
+            onClick={() => createNewGarment(generateGarmentByType('tshirt', { fit: 'relaxed' }))}
             className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
               activeGarment.type === 'tshirt'
                 ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
                 : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <span className="text-lg mb-0.5">👕</span>
-            <span className="text-[11px] leading-tight font-medium">T-Shirt</span>
-            <span className="text-[9px] opacity-70">Boxy Fit</span>
+            <span className="text-base mb-0.5">👕</span>
+            <span className="text-[10px] leading-tight font-medium">T-Shirt</span>
+            <span className="text-[8px] opacity-70">4-Panel</span>
+          </button>
+
+          <button
+            onClick={() => createNewGarment(generateGarmentByType('dress', { fit: 'regular' }))}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
+              activeGarment.type === 'dress'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span className="text-base mb-0.5">👗</span>
+            <span className="text-[10px] leading-tight font-medium">Dress</span>
+            <span className="text-[8px] opacity-70">A-Line</span>
+          </button>
+
+          <button
+            onClick={() => createNewGarment(generateGarmentByType('trousers', { fit: 'regular' }))}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
+              activeGarment.type === 'trousers'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span className="text-base mb-0.5">👖</span>
+            <span className="text-[10px] leading-tight font-medium">Pants</span>
+            <span className="text-[8px] opacity-70">Wide-Leg</span>
+          </button>
+
+          <button
+            onClick={() => createNewGarment(generateGarmentByType('croptop', { fit: 'slim' }))}
+            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border text-center transition-all ${
+              activeGarment.type === 'croptop'
+                ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent)] font-medium'
+                : 'bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span className="text-base mb-0.5">👚</span>
+            <span className="text-[10px] leading-tight font-medium">Crop Top</span>
+            <span className="text-[8px] opacity-70">Fitted</span>
           </button>
 
           <button
@@ -90,9 +145,9 @@ export const LeftSidebar: React.FC = () => {
             }`}
             title="Reference 2-panel sewn garment with active XPBD cloth simulation"
           >
-            <span className="text-lg mb-0.5">🎽</span>
-            <span className="text-[11px] leading-tight font-medium">2P Tunic</span>
-            <span className="text-[9px] opacity-70">Sim Ready</span>
+            <span className="text-base mb-0.5">🎽</span>
+            <span className="text-[10px] leading-tight font-medium">2P Tunic</span>
+            <span className="text-[8px] opacity-70">Sim Ready</span>
           </button>
         </div>
       </div>

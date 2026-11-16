@@ -28,6 +28,7 @@ import {
 interface HeaderProps {
   onOpenDashboard: () => void;
   onOpenGLBValidator: () => void;
+  onOpenCreateGarment: () => void;
   onExportPNG: (transparent: boolean) => void;
   onExportGLB: () => void;
 }
@@ -35,6 +36,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenDashboard,
   onOpenGLBValidator,
+  onOpenCreateGarment,
   onExportGLB
 }) => {
   const {
@@ -193,6 +195,16 @@ export const Header: React.FC<HeaderProps> = ({
           title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+        </button>
+
+        {/* Modular Garment Creator Wizard */}
+        <button
+          onClick={onOpenCreateGarment}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white text-xs font-semibold shadow-sm transition-all"
+          title="Create New Garment from Modular Patterns"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>New Garment</span>
         </button>
 
         <button

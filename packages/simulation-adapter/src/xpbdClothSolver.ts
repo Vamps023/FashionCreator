@@ -55,6 +55,17 @@ export class GarmentClothSolver {
   // Colliders
   public avatarColliders: AvatarCollider[] = [];
 
+  // Interactive Live Grab (3D Tug Tool)
+  public grabTarget: {
+    vertexIndex: number;
+    targetPosition: THREE.Vector3;
+    radius: number;
+    strength: number;
+  } | null = null;
+
+  // Vertex Pinning
+  public pinnedIndices: Set<number> = new Set();
+
   // Solver Parameters
   public fabric: SolverFabricConfig = {
     warpStiffness: 0.85,
@@ -234,6 +245,30 @@ export class GarmentClothSolver {
         this.positions[idx] += vx;
         this.positions[idx + 1] += vy - this.gravity * subDt2;
         this.positions[idx + 2] += vz;
+      }
+
+      // 1.5 Interactive User Grab (Mouse 3D Tug Tool)
+      if (this.grabTarget) {
+        const { targetPosition, vertexIndex, radius, strength } = this.grabTarget;
+        const centerIdx = vertexIndex * 3;
+        const cX = this.positions[centerIdx];
+        const cY = this.positions[centerIdx + 1];
+        const cZ = this.positions[centerIdx + 2];
+
+        for (let i = 0; i < this.numParticles; i++) {
+          if (this.invMasses[i] === 0.0) continue;
+          const idx = i * 3;
+          const dx = this.positions[idx] - cX;
+          const dy = this.positions[idx + 1] - cY;
+          const dz = this.positions[idx + 2] - cZ;
+          const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (d <= radius) {
+            const factor = Math.max(0, 1.0 - d / radius) * strength;
+            this.positions[idx] += (targetPosition.x - this.positions[idx]) * factor;
+            this.positions[idx + 1] += (targetPosition.y - this.positions[idx + 1]) * factor;
+            this.positions[idx + 2] += (targetPosition.z - this.positions[idx + 2]) * factor;
+          }
+        }
       }
 
       // 2. Solve Sewing Constraints (Pulling seams together)
@@ -434,5 +469,170 @@ export class GarmentClothSolver {
     posAttr.array.set(this.originalPositions);
     posAttr.needsUpdate = true;
     this.geometry.computeVertexNormals();
+  }
+
+  public togglePinVertex(idx: number): boolean {
+    if (idx < 0 || idx >= this.numParticles) return false;
+    if (this.pinnedIndices.has(idx)) {
+      this.pinnedIndices.delete(idx);
+      const particleMass = Math.max(0.01, (this.fabric.arealDensityGsm / 1000) * 0.02);
+      this.invMasses[idx] = 1.0 / particleMass;
+      return false; // unpinned
+    } else {
+      this.pinnedIndices.add(idx);
+      this.invMasses[idx] = 0.0;
+      return true; // pinned
+    }
+  }
+
+  public isPinned(idx: number): boolean {
+    return this.pinnedIndices.has(idx);
+  }
+
+  public setGrabTarget(
+    vertexIndex: number,
+    targetPosition: THREE.Vector3,
+    radius: number = 0.09,
+    strength: number = 0.96
+  ): void {
+    this.grabTarget = {
+      vertexIndex,
+      targetPosition,
+      radius,
+      strength
+    };
+  }
+
+  public clearGrabTarget(): void {
+    this.grabTarget = null;
+  }
+
+  /**
+   * Evaluates XPBD strain (stretch/compression) across all edges
+   * and returns an RGB Float32Array for Three.js vertex coloring.
+   */
+  public computeStrainColors(): Float32Array {
+    const colors = new Float32Array(this.numParticles * 3);
+    const edgeCounts = new Uint8Array(this.numParticles);
+    const accumulatedStrain = new Float32Array(this.numParticles);
+
+    for (let e = 0; e < this.numEdges; e++) {
+      const u = this.edgeIndices[e * 2];
+      const v = this.edgeIndices[e * 2 + 1];
+      const uIdx = u * 3;
+      const vIdx = v * 3;
+
+      const dx = this.positions[uIdx] - this.positions[vIdx];
+      const dy = this.positions[uIdx + 1] - this.positions[vIdx + 1];
+      const dz = this.positions[uIdx + 2] - this.positions[vIdx + 2];
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.0001;
+
+      const strain = (dist - this.restLengths[e]) / (this.restLengths[e] || 1.0);
+      accumulatedStrain[u] += strain;
+      edgeCounts[u]++;
+      accumulatedStrain[v] += strain;
+      edgeCounts[v]++;
+    }
+
+    for (let i = 0; i < this.numParticles; i++) {
+      const avgStrain = edgeCounts[i] > 0 ? accumulatedStrain[i] / edgeCounts[i] : 0;
+      const cIdx = i * 3;
+
+      if (avgStrain < 0.0) {
+        // Slack / Compression (Blue)
+        const t = Math.min(1.0, Math.abs(avgStrain) * 5.0);
+        colors[cIdx] = 0.1 * (1 - t);
+        colors[cIdx + 1] = 0.4 + 0.2 * (1 - t);
+        colors[cIdx + 2] = 0.8 + 0.2 * t;
+      } else if (avgStrain <= 0.06) {
+        // Comfortable Fit (Green)
+        const t = avgStrain / 0.06;
+        colors[cIdx] = 0.1 + 0.6 * t;
+        colors[cIdx + 1] = 0.85;
+        colors[cIdx + 2] = 0.2 * (1 - t);
+      } else if (avgStrain <= 0.15) {
+        // Moderate Tension (Yellow to Orange)
+        const t = (avgStrain - 0.06) / 0.09;
+        colors[cIdx] = 0.95;
+        colors[cIdx + 1] = 0.85 - 0.45 * t;
+        colors[cIdx + 2] = 0.05;
+      } else {
+        // High Strain / Tight (Red)
+        colors[cIdx] = 0.95;
+        colors[cIdx + 1] = 0.1;
+        colors[cIdx + 2] = 0.1;
+      }
+    }
+
+    return colors;
+  }
+
+  /**
+   * Evaluates proximity / contact pressure against avatar colliders
+   * and returns an RGB Float32Array for Three.js vertex coloring.
+   */
+  public computeFitColors(): Float32Array {
+    const colors = new Float32Array(this.numParticles * 3);
+
+    for (let i = 0; i < this.numParticles; i++) {
+      const idx = i * 3;
+      const pX = this.positions[idx];
+      const pY = this.positions[idx + 1];
+      const pZ = this.positions[idx + 2];
+
+      let minClearance = Infinity;
+
+      for (const col of this.avatarColliders) {
+        if (col.type === 'sphere') {
+          const dx = pX - col.centerA.x;
+          const dy = pY - col.centerA.y;
+          const dz = pZ - col.centerA.z;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          const clearance = dist - col.radius;
+          if (clearance < minClearance) minClearance = clearance;
+        } else if (col.type === 'capsule' && col.centerB) {
+          const abX = col.centerB.x - col.centerA.x;
+          const abY = col.centerB.y - col.centerA.y;
+          const abZ = col.centerB.z - col.centerA.z;
+          const abLen2 = abX * abX + abY * abY + abZ * abZ;
+
+          const apX = pX - col.centerA.x;
+          const apY = pY - col.centerA.y;
+          const apZ = pZ - col.centerA.z;
+
+          const t = Math.max(0, Math.min(1, (apX * abX + apY * abY + apZ * abZ) / abLen2));
+          const closestX = col.centerA.x + abX * t;
+          const closestY = col.centerA.y + abY * t;
+          const closestZ = col.centerA.z + abZ * t;
+
+          const dx = pX - closestX;
+          const dy = pY - closestY;
+          const dz = pZ - closestZ;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          const clearance = dist - col.radius;
+          if (clearance < minClearance) minClearance = clearance;
+        }
+      }
+
+      const cIdx = i * 3;
+      if (minClearance < 0.005) {
+        // Tight Contact (Red)
+        colors[cIdx] = 0.95;
+        colors[cIdx + 1] = 0.15;
+        colors[cIdx + 2] = 0.15;
+      } else if (minClearance <= 0.025) {
+        // Ideal Ease (Green)
+        colors[cIdx] = 0.15;
+        colors[cIdx + 1] = 0.85;
+        colors[cIdx + 2] = 0.25;
+      } else {
+        // Loose Drape (Blue)
+        colors[cIdx] = 0.2;
+        colors[cIdx + 1] = 0.5;
+        colors[cIdx + 2] = 0.95;
+      }
+    }
+
+    return colors;
   }
 }

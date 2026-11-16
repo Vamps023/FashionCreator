@@ -15,7 +15,10 @@ import {
   Pause,
   RotateCcw,
   Activity,
-  Layers
+  Layers,
+  Gauge,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import * as THREE from 'three';
 
@@ -32,9 +35,10 @@ export interface Viewport3DHandle {
 interface Viewport3DProps {
   onPerformanceUpdate: (stats: PerformanceStats) => void;
   onSimulationStateChange?: (isRunning: boolean) => void;
+  onArrangementPointSelected?: (pointId: string) => void;
 }
 
-export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPerformanceUpdate }, ref) => {
+export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPerformanceUpdate, onArrangementPointSelected }, ref) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<ViewportController | null>(null);
   const [isSimRunning, setIsSimRunning] = useState(false);
@@ -44,10 +48,14 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
     selectedPartId,
     cameraPreset,
     wireframeMode,
+    displayMode,
+    showArrangementPoints,
     viewMode2D3D,
     selectPart,
     setCameraPreset,
     setWireframeMode,
+    setDisplayMode,
+    setShowArrangementPoints,
     setViewMode2D3D,
     setAvatarVisible
   } = useEditorStore();
@@ -98,6 +106,10 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
       setIsSimRunning(running);
     };
 
+    controller.onArrangementPointClicked = (pointId) => {
+      onArrangementPointSelected?.(pointId);
+    };
+
     controller.onPartSelected = (partId) => {
       selectPart(partId);
     };
@@ -108,6 +120,10 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
 
     controller.onSimulationStateChange = (running) => {
       setIsSimRunning(running);
+    };
+
+    controller.onArrangementPointClicked = (pointId) => {
+      onArrangementPointSelected?.(pointId);
     };
 
     // Initial setup
@@ -151,6 +167,18 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
       controllerRef.current.setEnvironment(project.environment);
     }
   }, [project.environment]);
+
+  useEffect(() => {
+    if (controllerRef.current) {
+      controllerRef.current.setDisplayMode(displayMode);
+    }
+  }, [displayMode]);
+
+  useEffect(() => {
+    if (controllerRef.current) {
+      controllerRef.current.setShowArrangementPoints(showArrangementPoints);
+    }
+  }, [showArrangementPoints]);
 
   const toggleSimulation = () => {
     if (!controllerRef.current) return;
@@ -225,6 +253,54 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
         >
           <Columns className="w-3.5 h-3.5" />
         </button>
+
+        <div className="w-[1px] h-4 bg-[var(--border)] mx-1" />
+
+        {/* CLO 3D Arrangement Points Toggle */}
+        <button
+          onClick={() => setShowArrangementPoints(!showArrangementPoints)}
+          className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+            showArrangementPoints ? 'bg-sky-500 text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-elevated)]'
+          }`}
+          title="Toggle Avatar Arrangement Points (Cylindrical Wrapping Targets)"
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          <span className="text-[11px] font-medium">Points</span>
+        </button>
+
+        <div className="w-[1px] h-4 bg-[var(--border)] mx-1" />
+
+        {/* Display Mode: PBR vs Strain Map vs Fit Map */}
+        <div className="flex items-center bg-[var(--bg-elevated)] p-0.5 rounded border border-[var(--border)]">
+          <button
+            onClick={() => setDisplayMode('pbr')}
+            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+              displayMode === 'pbr' ? 'bg-[var(--accent)] text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-white'
+            }`}
+            title="Photorealistic PBR Material View"
+          >
+            PBR
+          </button>
+          <button
+            onClick={() => setDisplayMode('strain')}
+            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors flex items-center gap-1 ${
+              displayMode === 'strain' ? 'bg-amber-500 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-white'
+            }`}
+            title="Strain / Tension Heatmap: Red = Stretched, Green = Relaxed, Blue = Loose"
+          >
+            <Gauge className="w-3 h-3" />
+            Strain
+          </button>
+          <button
+            onClick={() => setDisplayMode('fit')}
+            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+              displayMode === 'fit' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-white'
+            }`}
+            title="Avatar Pressure / Contact Ease Map"
+          >
+            Fit
+          </button>
+        </div>
       </div>
 
       {/* Center Top: Simulation Play / Pause / Reset Bar */}
@@ -266,13 +342,17 @@ export const Viewport3D = forwardRef<Viewport3DHandle, Viewport3DProps>(({ onPer
         </div>
       )}
 
-      {/* Navigation Guide Hint */}
-      <div className="absolute bottom-3 left-3 z-10 pointer-events-none text-[10px] text-[var(--text-secondary)] font-mono flex items-center gap-2">
-        <span>L-Click: Rotate</span>
+      {/* Navigation Guide Hint & Interactive Cloth Grabbing */}
+      <div className="absolute bottom-3 left-3 z-10 pointer-events-none text-[10px] text-[var(--text-secondary)] font-mono flex items-center gap-2 bg-[var(--bg-panel)]/80 backdrop-blur-sm px-2.5 py-1 rounded border border-[var(--border)]">
+        <span className="text-[var(--accent)] font-semibold">Tug: Drag Cloth</span>
         <span>•</span>
-        <span>R-Click: Pan</span>
+        <span>Pin: Shift+Click</span>
         <span>•</span>
-        <span>Wheel: Zoom</span>
+        <span>Orbit: L-Click</span>
+        <span>•</span>
+        <span>Pan: R-Click</span>
+        <span>•</span>
+        <span>Zoom: Wheel</span>
       </div>
     </div>
   );

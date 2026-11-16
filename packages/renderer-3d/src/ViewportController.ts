@@ -472,6 +472,7 @@ export class ViewportController {
         this.clothSolver.fabric.bendingStiffness = physicalFabric.bendingStiffness;
         this.clothSolver.fabric.arealDensityGsm = physicalFabric.arealDensityGsm;
         this.clothSolver.fabric.damping = physicalFabric.damping;
+        this.clothSolver.fabric.friction = physicalFabric.friction || 0.5;
       }
 
       this.clothSolver.gravity = garment.simulationSettings.gravity || 9.81;

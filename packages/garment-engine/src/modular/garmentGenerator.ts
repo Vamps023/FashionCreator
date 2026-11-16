@@ -122,7 +122,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       seamAllowanceMm: 10,
       materialId: 'mat-tee-body',
       quantity: 1,
-      mirrored: false,
+      mirrored: true,
       transform2D: { x: 660, y: 50, rotation: 0 },
       transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
@@ -141,9 +141,9 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 50, y: 800, rotation: 0 },
       transform3D: {
-        position: [-0.30, 0.30, 0],
+        position: [-0.34, 0.28, 0],
         rotation: [0, -Math.PI / 2, 0],
-        curvatureRadius: 0.075,
+        curvatureRadius: 0.08,
         arrangementPoint: 'arm_left_upper'
       },
       meshDensityMm: 22
@@ -162,9 +162,9 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       mirrored: false,
       transform2D: { x: 450, y: 800, rotation: 0 },
       transform3D: {
-        position: [0.30, 0.30, 0],
+        position: [0.34, 0.28, 0],
         rotation: [0, Math.PI / 2, 0],
-        curvatureRadius: 0.075,
+        curvatureRadius: 0.08,
         arrangementPoint: 'arm_right_upper'
       },
       meshDensityMm: 22
@@ -172,15 +172,15 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
   ];
 
   const seams: SewingConnection[] = [
-    // 1. Shoulders
+    // 1. Shoulders (Clean parallel Left-to-Left, Right-to-Right!)
     {
       id: 'seam-tee-shoulder-left',
       name: 'Left Shoulder',
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 6,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 3,
-      orientation: 'reversed',
+      targetEdgeIndex: 6,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -190,20 +190,20 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 6,
-      orientation: 'reversed',
+      targetEdgeIndex: 3,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
-    // 2. Side Seams
+    // 2. Side Seams (Clean parallel Left-to-Left, Right-to-Right!)
     {
       id: 'seam-tee-side-left',
       name: 'Left Side Seam',
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 1,
-      orientation: 'reversed',
+      targetEdgeIndex: 8,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -213,8 +213,8 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 8,
-      orientation: 'reversed',
+      targetEdgeIndex: 1,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -241,12 +241,12 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       sewingMode: '1-to-1',
       active: true
     },
-    // 4. Sleeve to Armhole Seams
+    // 4. Sleeve to Armhole Seams (Front cap to Front armhole, Back cap to Back armhole)
     {
       id: 'seam-tee-armhole-left-front',
       name: 'Left Armhole Front',
       sourcePieceId: 'piece-tee-sleeve-left',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-front',
       targetEdgeIndex: 7,
       orientation: 'normal',
@@ -257,10 +257,10 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       id: 'seam-tee-armhole-left-back',
       name: 'Left Armhole Back',
       sourcePieceId: 'piece-tee-sleeve-left',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 2,
-      orientation: 'normal',
+      targetEdgeIndex: 7,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -268,7 +268,7 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       id: 'seam-tee-armhole-right-front',
       name: 'Right Armhole Front',
       sourcePieceId: 'piece-tee-sleeve-right',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-tee-front',
       targetEdgeIndex: 2,
       orientation: 'normal',
@@ -279,10 +279,10 @@ export function generateTShirtGarment(opts: GarmentCustomizationOptions = {}): G
       id: 'seam-tee-armhole-right-back',
       name: 'Right Armhole Back',
       sourcePieceId: 'piece-tee-sleeve-right',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 7,
-      orientation: 'normal',
+      targetEdgeIndex: 2,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     }

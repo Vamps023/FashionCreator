@@ -491,15 +491,29 @@ export class GarmentClothSolver {
             const vNormY = Math.min(0, vDotN) * ny;
             const vNormZ = Math.min(0, vDotN) * nz;
 
-            // Apply friction to tangential velocity
+            // Apply realistic static & kinetic friction to tangential velocity
             const frictionFactor = Math.min(1.0, Math.max(0.0, this.fabric.friction));
-            const vTangX = (vx - vDotN * nx) * (1.0 - frictionFactor);
-            const vTangY = (vy - vDotN * ny) * (1.0 - frictionFactor);
-            const vTangZ = (vz - vDotN * nz) * (1.0 - frictionFactor);
+            const rawTangX = vx - vDotN * nx;
+            const rawTangY = vy - vDotN * ny;
+            const rawTangZ = vz - vDotN * nz;
+            const tangSpeed2 = rawTangX * rawTangX + rawTangY * rawTangY + rawTangZ * rawTangZ;
+            const staticThreshold = 0.008; // 8 mm static stick limit on supporting avatar surfaces
 
-            this.prevPositions[idx] = this.positions[idx] - (vTangX + vNormX);
-            this.prevPositions[idx + 1] = this.positions[idx + 1] - (vTangY + vNormY);
-            this.prevPositions[idx + 2] = this.positions[idx + 2] - (vTangZ + vNormZ);
+            if (ny > 0.15 && tangSpeed2 < staticThreshold * staticThreshold * frictionFactor) {
+              // Static friction: lock resting cloth in place on supporting surfaces (shoulders, chest)
+              this.prevPositions[idx] = this.positions[idx];
+              this.prevPositions[idx + 1] = this.positions[idx + 1];
+              this.prevPositions[idx + 2] = this.positions[idx + 2];
+            } else {
+              // Kinetic friction: dynamic tangential slide damping
+              const vTangX = rawTangX * (1.0 - frictionFactor);
+              const vTangY = rawTangY * (1.0 - frictionFactor);
+              const vTangZ = rawTangZ * (1.0 - frictionFactor);
+
+              this.prevPositions[idx] = this.positions[idx] - (vTangX + vNormX);
+              this.prevPositions[idx + 1] = this.positions[idx + 1] - (vTangY + vNormY);
+              this.prevPositions[idx + 2] = this.positions[idx + 2] - (vTangZ + vNormZ);
+            }
           }
         }
       }

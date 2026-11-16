@@ -81,6 +81,9 @@ export function assembleGarmentFromPatterns(
 
       // Center piece around its own local origin in mm, convert to meters
       let localX = (pxMm - (minX + maxX) / 2) / 1000;
+      if (piece.mirrored) {
+        localX = -localX;
+      }
       const localY = (pyMm - (minY + maxY) / 2) / 1000;
       let localZ = 0;
 
@@ -102,9 +105,21 @@ export function assembleGarmentFromPatterns(
       allPositions.push(vec.x, vec.y, vec.z);
     }
 
-    // Add indices with offset
-    for (let i = 0; i < mesh2D.indices.length; i++) {
-      allIndices.push(mesh2D.indices[i] + startIdx);
+    // Add indices with offset (reversing winding if mirrored so face normals point outward)
+    for (let i = 0; i < mesh2D.indices.length; i += 3) {
+      if (piece.mirrored) {
+        allIndices.push(
+          mesh2D.indices[i] + startIdx,
+          mesh2D.indices[i + 2] + startIdx,
+          mesh2D.indices[i + 1] + startIdx
+        );
+      } else {
+        allIndices.push(
+          mesh2D.indices[i] + startIdx,
+          mesh2D.indices[i + 1] + startIdx,
+          mesh2D.indices[i + 2] + startIdx
+        );
+      }
     }
 
     globalVertexOffset += count;

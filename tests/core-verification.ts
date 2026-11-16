@@ -42,12 +42,12 @@ console.log('================================================================\n'
 console.log('--- Test Suite 1: Project Initialization & Defaults ---');
 const project = createInitialProject();
 assert(project.schemaVersion === 1, 'AT-001: Project schemaVersion is exactly 1');
-assert(project.garments.length === 1, 'AT-001: Initial project has active garment instance');
-const hoodie = project.garments[0];
-assert(hoodie.type === 'hoodie', 'AT-001: Default template is Oversized Hoodie');
-assert(hoodie.parameters.bodyLength === 720, 'AT-001: Default body length 720 mm');
-assert(hoodie.parameters.chestWidth === 620, 'AT-001: Default chest width 620 mm');
-assert(hoodie.parameters.sleeveLength === 650, 'AT-001: Default sleeve length 650 mm');
+assert(project.garments.length >= 1, 'AT-001: Initial project has active garment instance');
+const activeGarment = project.garments.find((g) => g.id === project.activeGarmentId) || project.garments[0];
+assert(activeGarment.type === 'tshirt', 'AT-001: Default template is Classic Crewneck T-Shirt');
+assert(activeGarment.parameters.bodyLength === 700, 'AT-001: Default body length 700 mm');
+assert(activeGarment.parameters.chestWidth === 580, 'AT-001: Default chest width 580 mm');
+assert(activeGarment.parameters.sleeveLength === 260, 'AT-001: Default sleeve length 260 mm');
 assert(project.avatar.visible === true, 'AT-001: Virtual avatar mannequin enabled by default');
 
 // ---------------------------------------------------------
@@ -59,19 +59,19 @@ const cotton = FABRIC_PRESETS['heavy-cotton-black'];
 assert(cotton.sheen > 0 && cotton.roughness >= 0.7, 'AT-004: Fabric presets include physical sheen and roughness');
 
 // Verify that editing body_front material does NOT mutate body_back or other slots
-const initialFrontColor = hoodie.materials.body_front.color;
-const initialBackColor = hoodie.materials.body_back.color;
-const updatedFrontMat = { ...hoodie.materials.body_front, color: '#3b82f6' };
-hoodie.materials.body_front = updatedFrontMat;
-assert(hoodie.materials.body_front.color === '#3b82f6', 'AT-004: Selected slot color updated');
-assert(hoodie.materials.body_back.color === initialBackColor, 'AT-004: Other material slots remain completely untouched');
+const initialFrontColor = activeGarment.materials.body_front.color;
+const initialBackColor = activeGarment.materials.body_back.color;
+const updatedFrontMat = { ...activeGarment.materials.body_front, color: '#3b82f6' };
+activeGarment.materials.body_front = updatedFrontMat;
+assert(activeGarment.materials.body_front.color === '#3b82f6', 'AT-004: Selected slot color updated');
+assert(activeGarment.materials.body_back.color === initialBackColor, 'AT-004: Other material slots remain completely untouched');
 
 // ---------------------------------------------------------
 // [AT-006] PARAMETRIC MEASUREMENT BOUNDS
 // ---------------------------------------------------------
 console.log('\n--- Test Suite 3: Parametric Measurement Constraints ---');
-assert(hoodie.parameters.bodyLength >= 500 && hoodie.parameters.bodyLength <= 950, 'AT-006: Body length strictly within 500-950 mm range');
-assert(hoodie.parameters.chestWidth >= 400 && hoodie.parameters.chestWidth <= 800, 'AT-006: Chest width strictly within 400-800 mm range');
+assert(activeGarment.parameters.bodyLength >= 500 && activeGarment.parameters.bodyLength <= 950, 'AT-006: Body length strictly within 500-950 mm range');
+assert(activeGarment.parameters.chestWidth >= 400 && activeGarment.parameters.chestWidth <= 800, 'AT-006: Chest width strictly within 400-800 mm range');
 
 // ---------------------------------------------------------
 // [AT-007 & AT-008] COMMAND HISTORY & COALESCING
@@ -127,13 +127,13 @@ assert(currentDoc.name === 'Forked Capsule', 'AT-007: Forked action active');
 // [AT-009 through AT-012] ARTWORK ENGINE & PRINT ZONES
 // ---------------------------------------------------------
 console.log('\n--- Test Suite 5: 2D Artwork Layer Management & UV Print Zones ---');
-assert(hoodie.artworkLayers.length >= 1, 'AT-009: Default project contains initial text artwork layer');
-const textLayer = hoodie.artworkLayers[0];
+assert(activeGarment.artworkLayers.length >= 1, 'AT-009: Default project contains initial text artwork layer');
+const textLayer = activeGarment.artworkLayers[0];
 assert(textLayer.surfaceId === 'front-print', 'AT-009: Artwork assigned to front print zone');
 assert(textLayer.position[0] >= 0 && textLayer.position[0] <= 1, 'AT-011: Position coordinates normalized [0..1]');
 
 // Add back-panel artwork layer
-hoodie.artworkLayers.push({
+activeGarment.artworkLayers.push({
   id: 'art-back-test',
   name: 'Back Crest',
   type: 'text',
@@ -149,7 +149,7 @@ hoodie.artworkLayers.push({
   fontFamily: 'Inter',
   color: '#ffffff'
 });
-const backLayers = hoodie.artworkLayers.filter((l) => l.surfaceId === 'back-print');
+const backLayers = activeGarment.artworkLayers.filter((l) => l.surfaceId === 'back-print');
 assert(backLayers.length === 1, 'AT-012: Back print zone independently receives back artwork');
 
 // ---------------------------------------------------------
@@ -177,7 +177,7 @@ assert(futureResult.error?.includes('Unsupported future schema version'), 'AT-01
 // [PHASE 6] 2D SEWING PATTERN ENGINE & 1:1 SVG EXPORT
 // ---------------------------------------------------------
 console.log('\n--- Test Suite 7: 2D Sewing Pattern CAD PoC & SVG Generation ---');
-const patternDoc = generateHoodiePatterns(hoodie.id, hoodie.parameters);
+const patternDoc = generateHoodiePatterns('hoodie-test', { bodyLength: 720, chestWidth: 620, sleeveLength: 650 });
 assert(patternDoc.panels.length === 5, 'Phase 6: Generates 5 distinct pattern panels (Bodices, Sleeves, Hood, Pocket)');
 assert(patternDoc.units === 'mm', 'Phase 6: Pattern dimensions use explicit millimeters (mm)');
 const svgOutput = exportPatternToSVG(patternDoc);

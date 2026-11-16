@@ -907,7 +907,7 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       seamAllowanceMm: 10,
       materialId: 'mat-cotton-back',
       quantity: 1,
-      mirrored: false,
+      mirrored: true,
       transform2D: { x: 660, y: 50, rotation: 0 },
       transform3D: { position: [0, 0.14, -0.18], rotation: [0, Math.PI, 0] },
       meshDensityMm: 22
@@ -926,9 +926,9 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 50, y: 800, rotation: 0 },
       transform3D: {
-        position: [-0.30, 0.30, 0],
+        position: [-0.34, 0.28, 0],
         rotation: [0, -Math.PI / 2, 0],
-        curvatureRadius: 0.075,
+        curvatureRadius: 0.08,
         arrangementPoint: 'arm_left_upper'
       },
       meshDensityMm: 22
@@ -947,9 +947,9 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       mirrored: false,
       transform2D: { x: 450, y: 800, rotation: 0 },
       transform3D: {
-        position: [0.30, 0.30, 0],
+        position: [0.34, 0.28, 0],
         rotation: [0, Math.PI / 2, 0],
-        curvatureRadius: 0.075,
+        curvatureRadius: 0.08,
         arrangementPoint: 'arm_right_upper'
       },
       meshDensityMm: 22
@@ -957,15 +957,15 @@ export function createDefaultTShirtInstance(): GarmentInstance {
   ];
 
   const seams: SewingConnection[] = [
-    // 1. Shoulders
+    // 1. Shoulders (Clean parallel Left-to-Left, Right-to-Right!)
     {
       id: 'seam-tee-shoulder-left',
       name: 'Left Shoulder',
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 6,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 3,
-      orientation: 'reversed',
+      targetEdgeIndex: 6,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -975,20 +975,20 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 6,
-      orientation: 'reversed',
+      targetEdgeIndex: 3,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
-    // 2. Side Seams
+    // 2. Side Seams (Clean parallel Left-to-Left, Right-to-Right!)
     {
       id: 'seam-tee-side-left',
       name: 'Left Side Seam',
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 8,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 1,
-      orientation: 'reversed',
+      targetEdgeIndex: 8,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -998,8 +998,8 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       sourcePieceId: 'piece-tee-front',
       sourceEdgeIndex: 1,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 8,
-      orientation: 'reversed',
+      targetEdgeIndex: 1,
+      orientation: 'normal',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1026,12 +1026,12 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       sewingMode: '1-to-1',
       active: true
     },
-    // 4. Sleeve to Armhole Seams
+    // 4. Sleeve to Armhole Seams (Front cap to Front armhole, Back cap to Back armhole)
     {
       id: 'seam-tee-armhole-left-front',
       name: 'Left Armhole Front',
       sourcePieceId: 'piece-tee-sleeve-left',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-front',
       targetEdgeIndex: 7,
       orientation: 'normal',
@@ -1042,10 +1042,10 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       id: 'seam-tee-armhole-left-back',
       name: 'Left Armhole Back',
       sourcePieceId: 'piece-tee-sleeve-left',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 2,
-      orientation: 'normal',
+      targetEdgeIndex: 7,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     },
@@ -1053,7 +1053,7 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       id: 'seam-tee-armhole-right-front',
       name: 'Right Armhole Front',
       sourcePieceId: 'piece-tee-sleeve-right',
-      sourceEdgeIndex: 3,
+      sourceEdgeIndex: 2,
       targetPieceId: 'piece-tee-front',
       targetEdgeIndex: 2,
       orientation: 'normal',
@@ -1064,10 +1064,10 @@ export function createDefaultTShirtInstance(): GarmentInstance {
       id: 'seam-tee-armhole-right-back',
       name: 'Right Armhole Back',
       sourcePieceId: 'piece-tee-sleeve-right',
-      sourceEdgeIndex: 2,
+      sourceEdgeIndex: 3,
       targetPieceId: 'piece-tee-back',
-      targetEdgeIndex: 7,
-      orientation: 'normal',
+      targetEdgeIndex: 2,
+      orientation: 'reversed',
       sewingMode: '1-to-1',
       active: true
     }
@@ -1108,13 +1108,33 @@ export function createDefaultTShirtInstance(): GarmentInstance {
     },
     patternPieces: pieces,
     seams,
-    artworkLayers: [],
+    artworkLayers: [
+      {
+        id: 'art-front-logo-1',
+        name: 'Studio Monogram',
+        type: 'text',
+        surfaceId: 'front-print',
+        visible: true,
+        locked: false,
+        opacity: 0.95,
+        position: [0.5, 0.35],
+        scale: [0.35, 0.35],
+        rotation: 0,
+        text: 'A N T I G R A V I T Y',
+        fontSize: 24,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 'bold',
+        color: '#f8fafc',
+        letterSpacing: 6
+      }
+    ],
     simulationSettings: { ...DEFAULT_SIMULATION_SETTINGS }
   };
 }
 
 export function createInitialProject(): GarmentProject {
-  const defaultGarment = createDefaultHoodieInstance();
+  const defaultGarment = createDefaultTShirtInstance();
+  const defaultHoodie = createDefaultHoodieInstance();
 
   return {
     schemaVersion: 1,
@@ -1124,7 +1144,7 @@ export function createInitialProject(): GarmentProject {
     updatedAt: new Date().toISOString(),
     units: 'mm',
     activeGarmentId: defaultGarment.id,
-    garments: [defaultGarment],
+    garments: [defaultGarment, defaultHoodie],
     avatar: {
       visible: true,
       presetId: 'mannequin-stylized',

@@ -114,6 +114,27 @@ export const PatternCADCanvas: React.FC = () => {
     }
   }
 
+  function getPieceYBounds(piece: PatternPiece): { minY: number; maxY: number } {
+    let minY = Infinity, maxY = -Infinity;
+    piece.outlinePoints.forEach(([, y]) => {
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    });
+    if (minY === Infinity) {
+      minY = 0;
+      maxY = 100;
+    }
+    return { minY, maxY };
+  }
+
+  function patternToCanvasPoint(pt: [number, number], minY: number, maxY: number): [number, number] {
+    return [pt[0], maxY - (pt[1] - minY)];
+  }
+
+  function canvasToPatternPoint(localX: number, localY: number, minY: number, maxY: number): [number, number] {
+    return [localX, maxY - (localY - minY)];
+  }
+
   function drawPiece(ctx: CanvasRenderingContext2D, piece: PatternPiece, isSelected: boolean) {
     ctx.save();
     ctx.translate(piece.transform2D.x, piece.transform2D.y);
@@ -125,11 +146,14 @@ export const PatternCADCanvas: React.FC = () => {
       return;
     }
 
-    // 1. Fill pattern panel
+    const { minY, maxY } = getPieceYBounds(piece);
+    const cPts = pts.map((pt) => patternToCanvasPoint(pt, minY, maxY));
+
+    // 1. Fill pattern panel (Right-side up)
     ctx.beginPath();
-    pts.forEach(([x, y], i) => {
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    cPts.forEach(([cx, cy], i) => {
+      if (i === 0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
     });
     ctx.closePath();
 
@@ -149,10 +173,10 @@ export const PatternCADCanvas: React.FC = () => {
     ctx.stroke();
 
     // 4. Draw vertices
-    pts.forEach(([x, y], i) => {
+    cPts.forEach(([cx, cy], i) => {
       const isPtSelected = isSelected && selectedPointIndex === i;
       ctx.beginPath();
-      ctx.arc(x, y, (isPtSelected ? 5.5 : 3.5) / zoom, 0, Math.PI * 2);
+      ctx.arc(cx, cy, (isPtSelected ? 5.5 : 3.5) / zoom, 0, Math.PI * 2);
       ctx.fillStyle = isPtSelected ? '#fbbf24' : isSelected ? '#a78bfa' : '#cbd5e1';
       ctx.fill();
       ctx.strokeStyle = '#0f172a';
@@ -162,10 +186,13 @@ export const PatternCADCanvas: React.FC = () => {
 
     // 5. Draw edge lengths and sewing edge highlights
     for (let i = 0; i < pts.length; i++) {
+      const cp1 = cPts[i];
+      const cp2 = cPts[(i + 1) % cPts.length];
+      const midX = (cp1[0] + cp2[0]) / 2;
+      const midY = (cp1[1] + cp2[1]) / 2;
+
       const p1 = pts[i];
       const p2 = pts[(i + 1) % pts.length];
-      const midX = (p1[0] + p2[0]) / 2;
-      const midY = (p1[1] + p2[1]) / 2;
       const lenMm = Math.round(Math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2));
 
       // Check if this edge is selected in sewing mode
@@ -173,8 +200,8 @@ export const PatternCADCanvas: React.FC = () => {
 
       if (isSewingSelected) {
         ctx.beginPath();
-        ctx.moveTo(p1[0], p1[1]);
-        ctx.lineTo(p2[0], p2[1]);
+        ctx.moveTo(cp1[0], cp1[1]);
+        ctx.lineTo(cp2[0], cp2[1]);
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 4 / zoom;
         ctx.stroke();
@@ -188,10 +215,15 @@ export const PatternCADCanvas: React.FC = () => {
     }
 
     // 6. Piece Label & Grainline
+    let minX = Infinity, maxX = -Infinity;
+    pts.forEach(([x]) => {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    });
     ctx.fillStyle = isSelected ? '#ffffff' : '#e2e8f0';
     ctx.font = `bold ${Math.max(12, Math.round(14 / zoom))}px sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(piece.name, pts[0][0] + 120, pts[0][1] + 40);
+    ctx.fillText(piece.name, (minX + maxX) / 2, 35 / zoom);
 
     ctx.restore();
   }
@@ -200,7 +232,7 @@ export const PatternCADCanvas: React.FC = () => {
     ctx: CanvasRenderingContext2D,
     piecesList: PatternPiece[],
     seamsList: SewingConnection[],
-    activeSource: any
+    _activeSource: any
   ) {
     const pieceMap = new Map<string, PatternPiece>(piecesList.map((p) => [p.id, p]));
 
@@ -219,16 +251,24 @@ export const PatternCADCanvas: React.FC = () => {
 
       if (!pA1 || !pA2 || !pB1 || !pB2) return;
 
-      const midAX = pA.transform2D.x + (pA1[0] + pA2[0]) / 2;
-      const midAY = pA.transform2D.y + (pA1[1] + pA2[1]) / 2;
-      const midBX = pB.transform2D.x + (pB1[0] + pB2[0]) / 2;
-      const midBY = pB.transform2D.y + (pB1[1] + pB2[1]) / 2;
+      const boundsA = getPieceYBounds(pA);
+      const boundsB = getPieceYBounds(pB);
+
+      const cA1 = patternToCanvasPoint(pA1, boundsA.minY, boundsA.maxY);
+      const cA2 = patternToCanvasPoint(pA2, boundsA.minY, boundsA.maxY);
+      const cB1 = patternToCanvasPoint(pB1, boundsB.minY, boundsB.maxY);
+      const cB2 = patternToCanvasPoint(pB2, boundsB.minY, boundsB.maxY);
+
+      const midAX = pA.transform2D.x + (cA1[0] + cA2[0]) / 2;
+      const midAY = pA.transform2D.y + (cA1[1] + cA2[1]) / 2;
+      const midBX = pB.transform2D.x + (cB1[0] + cB2[0]) / 2;
+      const midBY = pB.transform2D.y + (cB1[1] + cB2[1]) / 2;
 
       // Draw curved sewing indicator line between corresponding seams
       ctx.beginPath();
       ctx.moveTo(midAX, midAY);
       const cpX = (midAX + midBX) / 2;
-      const cpY = (midAY + midBY) / 2 - 30;
+      const cpY = (midAY + midBY) / 2 - 25;
       ctx.quadraticCurveTo(cpX, cpY, midBX, midBY);
 
       ctx.strokeStyle = '#22c55e';
@@ -237,7 +277,7 @@ export const PatternCADCanvas: React.FC = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Sewing tag
+      // Sewing tags
       ctx.fillStyle = '#22c55e';
       ctx.beginPath();
       ctx.arc(midAX, midAY, 4 / zoom, 0, Math.PI * 2);
@@ -271,11 +311,14 @@ export const PatternCADCanvas: React.FC = () => {
       const localX = docX - piece.transform2D.x;
       const localY = docY - piece.transform2D.y;
 
+      const { minY, maxY } = getPieceYBounds(piece);
+      const [patX, patY] = canvasToPatternPoint(localX, localY, minY, maxY);
+
       // Check vertex hit
       for (let v = 0; v < piece.outlinePoints.length; v++) {
         const [vx, vy] = piece.outlinePoints[v];
-        const dist = Math.hypot(localX - vx, localY - vy);
-        if (dist <= 12 / zoom) {
+        const dist = Math.hypot(patX - vx, patY - vy);
+        if (dist <= 14 / zoom) {
           setSelectedPieceId(piece.id);
           setSelectedPointIndex(v);
           setIsDraggingTarget('vertex');
@@ -283,18 +326,18 @@ export const PatternCADCanvas: React.FC = () => {
         }
       }
 
-      // Check edge hit (for Sewing tool)
+      // Check edge hit (for Sewing tool or split tool)
       for (let eIdx = 0; eIdx < piece.outlinePoints.length; eIdx++) {
         const p1 = piece.outlinePoints[eIdx];
         const p2 = piece.outlinePoints[(eIdx + 1) % piece.outlinePoints.length];
-        const dEdge = distToSegment([localX, localY], p1, p2);
+        const dEdge = distToSegment([patX, patY], p1, p2);
 
-        if (dEdge <= 14 / zoom) {
+        if (dEdge <= 16 / zoom) {
           if (activeTool === 'split') {
             const dx = p2[0] - p1[0];
             const dy = p2[1] - p1[1];
             const len2 = dx * dx + dy * dy;
-            const t = Math.max(0.08, Math.min(0.92, ((localX - p1[0]) * dx + (localY - p1[1]) * dy) / len2));
+            const t = Math.max(0.08, Math.min(0.92, ((patX - p1[0]) * dx + (patY - p1[1]) * dy) / len2));
             const newPt: [number, number] = [Math.round(p1[0] + dx * t), Math.round(p1[1] + dy * t)];
             insertVertexOnEdge(piece.id, eIdx, newPt);
             return;
@@ -317,7 +360,7 @@ export const PatternCADCanvas: React.FC = () => {
       }
 
       // Check piece interior hit
-      if (isPointInsidePolygon([localX, localY], piece.outlinePoints)) {
+      if (isPointInsidePolygon([patX, patY], piece.outlinePoints)) {
         setSelectedPieceId(piece.id);
         setSelectedPointIndex(null);
         setIsDraggingTarget('piece');
@@ -357,9 +400,11 @@ export const PatternCADCanvas: React.FC = () => {
     } else if (isDraggingTarget === 'vertex' && selectedPieceId && selectedPointIndex !== null) {
       const piece = pieces.find((p) => p.id === selectedPieceId);
       if (piece) {
-        const localX = Math.round(docX - piece.transform2D.x);
-        const localY = Math.round(docY - piece.transform2D.y);
-        updatePieceVertex(piece.id, selectedPointIndex, localX, localY);
+        const localX = docX - piece.transform2D.x;
+        const localY = docY - piece.transform2D.y;
+        const { minY, maxY } = getPieceYBounds(piece);
+        const [patX, patY] = canvasToPatternPoint(localX, localY, minY, maxY);
+        updatePieceVertex(piece.id, selectedPointIndex, Math.round(patX), Math.round(patY));
       }
     }
   };
